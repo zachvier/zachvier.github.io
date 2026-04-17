@@ -74,6 +74,7 @@
     letter-spacing: 0.05em;
     opacity: 0;
     transition: opacity 0.4s;
+    text-align: center;
   }
   #hint.show { opacity: 1; }
   #hint kbd {
@@ -82,7 +83,10 @@
     padding: 0 0.35em;
     font: inherit;
     font-size: 0.75rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
   }
+  #hint kbd:hover { color: var(--fg); border-color: var(--fg); }
   #toast {
     position: fixed;
     bottom: 2rem;
@@ -163,7 +167,7 @@
 <body>
 <main>
   <div id="ip" title="click to copy"><span id="ipval"></span><span class="cursor">█</span></div>
-  <div id="hint">click ip to copy · press <kbd>?</kbd> for details</div>
+  <div id="hint">tap ip to copy · tap <kbd id="detailsBtn">?</kbd> for details</div>
 </main>
 <div id="toast">copied</div>
 <div id="details" role="dialog" aria-hidden="true">
@@ -269,6 +273,7 @@
   }
 
   document.getElementById('ip').addEventListener('click', copyIp);
+  document.getElementById('detailsBtn').addEventListener('click', openDetails);
   closeEl.addEventListener('click', closeDetails);
   detailsEl.addEventListener('click', (e) => { if (e.target === detailsEl) closeDetails(); });
 
