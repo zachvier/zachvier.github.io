@@ -283,14 +283,19 @@
     }
   });
 
-  // ipwho.is returns ip + geo + asn + isp in a single CORS call, no API key
-  fetch('https://ipwho.is/?fields=ip,type,country,country_code,region,city,postal,latitude,longitude,connection')
+  // Step 1: get the IP (ipify IPv4 endpoint, reliable)
+  // Step 2: enrich with geo/isp (ipwho.is) — failure here is non-fatal
+  fetch('https://api.ipify.org?format=json')
     .then(r => r.json())
-    .then(async d => {
-      if (!d || d.success === false) throw new Error('lookup failed');
-      data = d;
-      await typewrite(ipEl, d.ip);
+    .then(async ({ ip }) => {
+      data.ip = ip;
+      await typewrite(ipEl, ip);
       hintEl.classList.add('show');
+      try {
+        const r = await fetch('https://ipwho.is/' + encodeURIComponent(ip));
+        const d = await r.json();
+        if (d && d.success !== false) data = { ...d, ip };
+      } catch { /* enrichment optional */ }
     })
     .catch(() => {
       ipEl.textContent = 'unable to detect ip';
