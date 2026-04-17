@@ -1,0 +1,9 @@
+zachvivier.com — static site, can't see your IP server-side.
+
+for terminal use, try one of:
+
+  curl ipify.org
+  curl ifconfig.me
+  curl ipwho.is
+
+or visit https://zachvivier.com in a browser.
