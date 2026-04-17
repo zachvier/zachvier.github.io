@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>zachvivier.com</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #000;
+    color: #fff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #ip {
+    font-size: clamp(1.5rem, 6vw, 3rem);
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div id="ip">&nbsp;</div>
+<script>
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => { document.getElementById('ip').textContent = d.ip; })
+    .catch(() => { document.getElementById('ip').textContent = 'unable to detect ip'; });
+</script>
+</body>
+</html>
