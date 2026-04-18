@@ -108,6 +108,7 @@
     transition: max-width 0.7s ease;
   }
   #nav:hover .links, #nav.open .links { max-width: 30rem; }
+  #nav.hint .links, #nav.hint:hover .links { max-width: 0; }
   #nav .links a {
     color: var(--fg);
     text-decoration: none;
@@ -117,6 +118,28 @@
     color: var(--accent);
     border-bottom-color: var(--accent);
   }
+  #nav .hint {
+    display: inline-block;
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--dim);
+    font-style: italic;
+    vertical-align: middle;
+    transition: max-width 0.5s ease, color 0.2s;
+  }
+  #nav.hint > .hint { max-width: 30rem; color: var(--accent); }
+  #nav.hint {
+    color: var(--accent);
+    border-color: var(--nav-accent-border);
+    background: var(--nav-accent-bg);
+  }
+  #nav.hint .label { color: var(--accent); }
+  @keyframes pixelMorph {
+    0%   { filter: blur(3px) contrast(1.8) saturate(1.4); }
+    100% { filter: blur(0) contrast(1) saturate(1); }
+  }
+  #nav.morphing { animation: pixelMorph 0.5s steps(6, end); }
   .cursor {
     display: inline-block;
     width: 0.55ch;
@@ -179,6 +202,7 @@
 <main>
   <div id="nav" role="navigation" tabindex="0" aria-label="site navigation">
     <span class="label">~</span><span class="cursor">█</span>
+    <span class="hint" aria-hidden="true">Hover to open directory</span>
     <span class="links">
       <a href="/ip">whoami</a>
       <a href="/uses">uses</a>
@@ -220,6 +244,27 @@
   });
   document.addEventListener('click', (e) => {
     if (!nav.contains(e.target)) nav.classList.remove('open');
+  });
+
+  let hintTimer = null;
+  const clearHint = () => {
+    clearTimeout(hintTimer);
+    hintTimer = null;
+    nav.classList.remove('hint');
+  };
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key.length !== 1 && e.key !== 'Spacebar') return;
+    if (nav.classList.contains('open') || nav.classList.contains('hint')) return;
+    if (nav.matches(':hover')) return;
+    nav.classList.add('hint');
+    hintTimer = setTimeout(clearHint, 2800);
+  });
+  nav.addEventListener('mouseenter', () => {
+    if (!nav.classList.contains('hint')) return;
+    clearHint();
+    nav.classList.add('morphing');
+    setTimeout(() => nav.classList.remove('morphing'), 500);
   });
 </script>
 </body>
