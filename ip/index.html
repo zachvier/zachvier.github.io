@@ -293,17 +293,11 @@
   }
 
   const descriptions = {
-    'ip': 'Your public IP address — the unique identifier your network presents to the internet. Websites and services see this instead of your device\'s private LAN address.',
-    'reverse dns': 'The hostname your IP reverse-resolves to, usually set by your ISP. Often reveals the carrier or region handling your connection.',
+    'ipv4': 'Your public IPv4 address — the 32-bit identifier your network presents to the internet over the legacy protocol most sites still default to.',
+    'ipv6': 'Your public IPv6 address — the 128-bit successor to IPv4. Shown only if your connection supports it.',
     'isp': 'The Internet Service Provider routing your traffic — the company you pay for connectivity.',
-    'org': 'The organization that owns the IP block. Sometimes matches the ISP, sometimes a parent company or a hosting provider.',
-    'asn': 'Autonomous System Number — a globally unique ID for the network your traffic originates from. Used by BGP to route packets between networks.',
-    'type': 'Whether the address is IPv4 (older 32-bit) or IPv6 (newer 128-bit). IPv6 adoption is gradual but growing.',
-    'city': 'Approximate city based on the IP geolocation database. Can be off by tens of miles — it\'s not GPS.',
-    'region': 'State, province, or administrative region inferred from the IP.',
     'country': 'Country associated with this IP block, per the geolocation provider.',
-    'postal': 'Approximate postal code. Usually represents the ISP\'s routing center, not your home.',
-    'coords': 'Latitude and longitude tied to the IP. Often points to a city centroid, not your actual location.',
+    'region': 'A rough regional hint from IP geolocation. Intentionally coarse — city-level precision is both unreliable and more than this page needs to share.',
     'timezone': 'Your browser\'s reported IANA timezone. Set by your OS, not the IP.',
     'local': 'Current time as your device sees it, in your local timezone.',
     'utc': 'Current time in UTC — the timezone-neutral reference used by servers and logs.',
@@ -330,19 +324,13 @@
 
     panelEl.innerHTML = `
       <h2>network</h2>
-      ${row('ip', data.ip)}
-      ${row('reverse dns', data.connection?.domain)}
+      ${row('ipv4', data.ipv4)}
+      ${row('ipv6', data.ipv6)}
       ${row('isp', data.connection?.isp)}
-      ${row('org', data.connection?.org)}
-      ${row('asn', data.connection?.asn ? 'AS' + data.connection.asn : null)}
-      ${row('type', data.type)}
 
       <h2>location</h2>
-      ${row('city', data.city)}
-      ${row('region', data.region)}
       ${row('country', data.country && data.country_code ? `${data.country} (${data.country_code})` : data.country)}
-      ${row('postal', data.postal)}
-      ${row('coords', data.latitude && data.longitude ? `${data.latitude}, ${data.longitude}` : null)}
+      ${row('region', data.roughRegion)}
 
       <h2>time</h2>
       ${row('timezone', tz)}
@@ -440,21 +428,60 @@
     }
   });
 
-  fetch('https://api.ipify.org?format=json')
-    .then(r => r.json())
-    .then(async ({ ip }) => {
-      data.ip = ip;
-      await typewrite(ipEl, ip);
-      hintEl.classList.add('show');
-      try {
-        const r = await fetch('https://ipwho.is/' + encodeURIComponent(ip));
-        const d = await r.json();
-        if (d && d.success !== false) data = { ...d, ip };
-      } catch { /* enrichment optional */ }
-    })
-    .catch(() => {
+  const US_REGIONS = {
+    northeast: ['CT','ME','MA','NH','NJ','NY','PA','RI','VT'],
+    midwest:   ['IL','IN','IA','KS','MI','MN','MO','NE','ND','OH','SD','WI'],
+    south:     ['AL','AR','DE','DC','FL','GA','KY','LA','MD','MS','NC','OK','SC','TN','TX','VA','WV'],
+    west:      ['AK','AZ','CA','CO','HI','ID','MT','NV','NM','OR','UT','WA','WY'],
+  };
+
+  function roughRegionFor(countryCode, regionCode) {
+    if (countryCode === 'US' && regionCode) {
+      for (const [name, states] of Object.entries(US_REGIONS)) {
+        if (states.includes(regionCode)) {
+          return name.charAt(0).toUpperCase() + name.slice(1) + 'ern US';
+        }
+      }
+    }
+    return null;
+  }
+
+  function fetchText(url) {
+    return fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status));
+  }
+
+  (async () => {
+    const [v4Res, v6Res] = await Promise.allSettled([
+      fetchText('https://api4.ipify.org?format=text'),
+      fetchText('https://api6.ipify.org?format=text'),
+    ]);
+    const ipv4 = v4Res.status === 'fulfilled' ? v4Res.value.trim() : null;
+    const ipv6 = v6Res.status === 'fulfilled' ? v6Res.value.trim() : null;
+
+    if (!ipv4 && !ipv6) {
       ipEl.textContent = 'unable to detect ip';
-    });
+      return;
+    }
+
+    data.ipv4 = ipv4;
+    data.ipv6 = ipv6;
+    data.ip = ipv4 || ipv6;
+
+    await typewrite(ipEl, data.ip);
+    hintEl.classList.add('show');
+
+    const enrichTarget = ipv4 || ipv6;
+    try {
+      const r = await fetch('https://ipapi.co/' + encodeURIComponent(enrichTarget) + '/json/');
+      const d = await r.json();
+      if (d && !d.error) {
+        data.country = d.country_name;
+        data.country_code = d.country_code;
+        data.roughRegion = roughRegionFor(d.country_code, d.region_code);
+        data.connection = { isp: d.org };
+      }
+    } catch { /* enrichment optional */ }
+  })();
 </script>
 </body>
 </html>
