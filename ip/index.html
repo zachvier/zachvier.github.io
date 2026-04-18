@@ -92,20 +92,23 @@
   #hint kbd:hover { color: var(--fg); border-color: var(--fg); }
   #toast {
     position: fixed;
-    bottom: 2rem;
+    top: 1.25rem;
     left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: rgba(255,255,255,0.08);
-    color: var(--fg);
-    border: 1px solid rgba(255,255,255,0.15);
-    padding: 0.5rem 1rem;
+    transform: translateX(-50%) translateY(-12px);
+    background: var(--accent);
+    color: #000;
+    border: 1px solid var(--accent);
+    padding: 0.55rem 1.1rem;
     border-radius: 4px;
     font-size: 0.85rem;
-    letter-spacing: 0.05em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(154,209,255,0.45), 0 4px 16px rgba(0,0,0,0.6);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s, transform 0.25s;
-    z-index: 5;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 10;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #details {
@@ -141,9 +144,56 @@
     gap: 1rem;
     padding: 0.15rem 0;
     border-bottom: 1px dotted rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: opacity 0.2s, color 0.2s;
+    clip-path: inset(0 100% 0 0);
   }
-  #details .k { color: var(--dim); }
+  #details.show .row {
+    animation: revealRow 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+  @keyframes revealRow {
+    to { clip-path: inset(0 0 0 0); }
+  }
+  #details h2 {
+    clip-path: inset(0 100% 0 0);
+  }
+  #details.show h2 {
+    animation: revealRow 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+  #panel.hovering .row:not(:hover),
+  #panel.hovering h2 { opacity: 0.3; }
+  #details .row:hover { color: var(--accent); }
+  #details .row:hover .k { color: var(--accent); }
+  #details .k { color: var(--dim); transition: color 0.2s; }
   #details .v { word-break: break-word; }
+  #desc {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
+    max-width: 640px;
+    width: calc(100% - 3rem);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--fg);
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 5;
+  }
+  #desc.show { opacity: 1; }
+  #desc .label {
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.65rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
   #details .close {
     position: fixed;
     top: 1rem;
@@ -176,6 +226,7 @@
 <div id="details" role="dialog" aria-hidden="true">
   <span class="close" id="close">[esc]</span>
   <div class="panel" id="panel"></div>
+  <div id="desc"><span class="label"></span><span class="text"></span></div>
 </div>
 <footer>zachvivier.com · <a href="https://github.com/zachvier/zachvier.github.io" target="_blank" rel="noopener">source</a></footer>
 <script>
@@ -211,19 +262,60 @@
     showToast._t = setTimeout(() => toastEl.classList.remove('show'), 1400);
   }
 
-  async function copyIp() {
-    if (!data.ip) return;
+  async function copyText(text) {
     try {
-      await navigator.clipboard.writeText(data.ip);
-      showToast('copied ' + data.ip);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {}
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
     } catch {
-      showToast('copy failed');
+      return false;
     }
   }
 
+  async function copyIp() {
+    if (!data.ip) return;
+    const ok = await copyText(data.ip);
+    showToast(ok ? 'copied ' + data.ip : 'copy failed');
+  }
+
+  const descriptions = {
+    'ip': 'Your public IP address — the unique identifier your network presents to the internet. Websites and services see this instead of your device\'s private LAN address.',
+    'reverse dns': 'The hostname your IP reverse-resolves to, usually set by your ISP. Often reveals the carrier or region handling your connection.',
+    'isp': 'The Internet Service Provider routing your traffic — the company you pay for connectivity.',
+    'org': 'The organization that owns the IP block. Sometimes matches the ISP, sometimes a parent company or a hosting provider.',
+    'asn': 'Autonomous System Number — a globally unique ID for the network your traffic originates from. Used by BGP to route packets between networks.',
+    'type': 'Whether the address is IPv4 (older 32-bit) or IPv6 (newer 128-bit). IPv6 adoption is gradual but growing.',
+    'city': 'Approximate city based on the IP geolocation database. Can be off by tens of miles — it\'s not GPS.',
+    'region': 'State, province, or administrative region inferred from the IP.',
+    'country': 'Country associated with this IP block, per the geolocation provider.',
+    'postal': 'Approximate postal code. Usually represents the ISP\'s routing center, not your home.',
+    'coords': 'Latitude and longitude tied to the IP. Often points to a city centroid, not your actual location.',
+    'timezone': 'Your browser\'s reported IANA timezone. Set by your OS, not the IP.',
+    'local': 'Current time as your device sees it, in your local timezone.',
+    'utc': 'Current time in UTC — the timezone-neutral reference used by servers and logs.',
+    'user agent': 'The identifier your browser sends with every request. Declares browser, engine, OS, and version.',
+    'language': 'Your browser\'s preferred language, sent in the Accept-Language header.',
+    'platform': 'The OS platform your browser reports. Modern browsers sometimes freeze this for privacy.',
+    'viewport': 'Size of the visible browser window in CSS pixels — what your page actually has to work with.',
+    'screen': 'Your physical screen\'s resolution and pixel density. The multiplier reflects Retina/HiDPI scaling.',
+    'color scheme': 'Whether your OS is currently in light or dark mode. Sites can respect this via CSS prefers-color-scheme.'
+  };
+
   function row(k, v) {
     if (v === undefined || v === null || v === '') return '';
-    return `<div class="row"><div class="k">${k}</div><div class="v">${String(v).replace(/</g,'&lt;')}</div></div>`;
+    return `<div class="row" data-key="${k}"><div class="k">${k}</div><div class="v">${String(v).replace(/</g,'&lt;')}</div></div>`;
   }
 
   function renderDetails() {
@@ -263,7 +355,51 @@
       ${row('screen', screen)}
       ${row('color scheme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')}
     `;
+
+    const all = panelEl.querySelectorAll('.row, h2');
+    all.forEach((el, i) => { el.style.animationDelay = (i * 40) + 'ms'; });
+
+    const descEl = document.getElementById('desc');
+    const descLabel = descEl.querySelector('.label');
+    const descText = descEl.querySelector('.text');
+    let hideTimer;
+    const clearHover = () => {
+      panelEl.classList.remove('hovering');
+      descEl.classList.remove('show');
+    };
+    panelEl.querySelectorAll('.row').forEach(r => {
+      r.addEventListener('mouseenter', () => {
+        clearTimeout(hideTimer);
+        const k = r.dataset.key;
+        const d = descriptions[k];
+        if (!d) return;
+        panelEl.classList.add('hovering');
+        descLabel.textContent = k;
+        descText.textContent = d;
+        descEl.classList.add('show');
+      });
+      r.addEventListener('mouseleave', () => {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(clearHover, 40);
+      });
+      r.addEventListener('click', async () => {
+        const val = r.querySelector('.v')?.textContent?.trim();
+        if (!val) return;
+        const ok = await copyText(val);
+        showToast(ok ? 'copied ' + r.dataset.key : 'copy failed');
+      });
+    });
   }
+
+  function updateLiveRows() {
+    const vpRow = panelEl.querySelector('.row[data-key="viewport"] .v');
+    if (vpRow) vpRow.textContent = `${window.innerWidth} × ${window.innerHeight}`;
+    const scRow = panelEl.querySelector('.row[data-key="screen"] .v');
+    if (scRow) scRow.textContent = `${window.screen.width} × ${window.screen.height} @ ${window.devicePixelRatio}x`;
+  }
+  window.addEventListener('resize', () => {
+    if (detailsEl.classList.contains('show')) updateLiveRows();
+  });
 
   function openDetails() {
     renderDetails();
