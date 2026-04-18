@@ -138,20 +138,33 @@
   footer a:hover { color: var(--fg); border-bottom-color: var(--fg); }
   #themeToggle {
     position: fixed;
-    bottom: 0.5rem;
-    right: 0.75rem;
+    bottom: 0.55rem;
+    right: 0.9rem;
     background: none;
     border: none;
-    color: var(--dim);
+    color: rgba(255,255,255,0.18);
     cursor: pointer;
-    padding: 0.4rem;
-    font-size: 1rem;
+    padding: 0.25rem;
+    font-size: 0.85rem;
     line-height: 1;
     z-index: 5;
     transition: color 0.2s;
+    animation: fadeIn 2.5s ease-out 0.9s both;
   }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   #themeToggle:hover { color: var(--fg); }
-  #themeToggle svg { display: block; width: 1em; height: 1em; }
+  #themeToggle .icon {
+    display: block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url(/moon.svg) no-repeat center / contain;
+    mask: url(/moon.svg) no-repeat center / contain;
+  }
+  :root[data-theme="light"] #themeToggle .icon {
+    -webkit-mask-image: url(/earth.svg);
+    mask-image: url(/earth.svg);
+  }
   @media (max-width: 520px) {
     .row { grid-template-columns: 7rem 1fr; gap: 0.75rem; }
   }
@@ -198,11 +211,7 @@
   <div class="updated reveal">last updated 2026-04-17</div>
 </main>
 <footer>zachvivier.com · <a href="https://github.com/zachvier/zachvier.github.io" target="_blank" rel="noopener">source</a> · <a href="/privacy">privacy</a></footer>
-<button id="themeToggle" type="button" aria-label="Toggle color scheme" title="Toggle color scheme">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>
-  </svg>
-</button>
+<button id="themeToggle" type="button" aria-label="Toggle color scheme" title="Toggle color scheme"><span class="icon" aria-hidden="true"></span></button>
 <script>
   (() => {
     const saved = localStorage.getItem('theme');
