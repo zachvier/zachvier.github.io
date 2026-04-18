@@ -93,6 +93,7 @@
   #toast {
     position: fixed;
     top: 1.25rem;
+    bottom: auto;
     left: 50%;
     transform: translateX(-50%) translateY(-12px);
     background: var(--accent);
@@ -111,6 +112,8 @@
     z-index: 10;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.bottom { top: auto; bottom: 1.25rem; transform: translateX(-50%) translateY(12px); }
+  #toast.bottom.show { transform: translateX(-50%) translateY(0); }
   #details {
     position: fixed;
     inset: 0;
@@ -139,14 +142,18 @@
   }
   #details h2:first-child { margin-top: 0; }
   #details .row {
-    display: grid;
-    grid-template-columns: 10rem 1fr;
-    gap: 1rem;
     padding: 0.15rem 0;
     border-bottom: 1px dotted rgba(255,255,255,0.06);
+    clip-path: inset(0 100% 0 0);
+  }
+  #details .hit {
+    display: grid;
+    grid-template-columns: 10rem auto;
+    gap: 1rem;
     cursor: pointer;
     transition: opacity 0.2s, color 0.2s;
-    clip-path: inset(0 100% 0 0);
+    width: fit-content;
+    max-width: 100%;
   }
   #details.show .row {
     animation: revealRow 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
@@ -160,16 +167,17 @@
   #details.show h2 {
     animation: revealRow 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
   }
-  #panel.hovering .row:not(:hover),
+  #panel.hovering .hit:not(:hover),
   #panel.hovering h2 { opacity: 0.3; }
-  #details .row:hover { color: var(--accent); }
-  #details .row:hover .k { color: var(--accent); }
+  #details .hit:hover { color: var(--accent); }
+  #details .hit:hover .k { color: var(--accent); }
   #details .k { color: var(--dim); transition: color 0.2s; }
   #details .v { word-break: break-word; }
   #desc {
     position: fixed;
     left: 50%;
     bottom: 1.5rem;
+    top: auto;
     transform: translateX(-50%);
     max-width: 640px;
     width: calc(100% - 3rem);
@@ -188,6 +196,7 @@
     z-index: 5;
   }
   #desc.show { opacity: 1; }
+  #desc.top { top: 1.5rem; bottom: auto; }
   #desc .label {
     color: var(--dim);
     text-transform: uppercase;
@@ -198,11 +207,13 @@
   }
   #details .close {
     position: fixed;
-    top: 1rem;
-    right: 1.25rem;
+    top: 0.5rem;
+    right: 0.75rem;
     color: var(--dim);
     cursor: pointer;
     font-size: 1rem;
+    padding: 0.5rem;
+    z-index: 6;
   }
   #details .close:hover { color: var(--fg); }
   footer {
@@ -311,7 +322,7 @@
 
   function row(k, v) {
     if (v === undefined || v === null || v === '') return '';
-    return `<div class="row" data-key="${k}"><div class="k">${k}</div><div class="v">${String(v).replace(/</g,'&lt;')}</div></div>`;
+    return `<div class="row"><div class="hit" data-key="${k}"><div class="k">${k}</div><div class="v">${String(v).replace(/</g,'&lt;')}</div></div></div>`;
   }
 
   function renderDetails() {
@@ -355,7 +366,7 @@
         if (ua.platform) parts.push(ua.platform);
         if (ua.architecture) parts.push(ua.architecture + (ua.bitness ? ua.bitness : ''));
         if (!parts.length) return;
-        const platRow = panelEl.querySelector('.row[data-key="platform"] .v');
+        const platRow = panelEl.querySelector('.hit[data-key="platform"] .v');
         if (platRow) platRow.textContent = parts.join(' ');
       }).catch(() => {});
     }
@@ -368,7 +379,15 @@
       panelEl.classList.remove('hovering');
       descEl.classList.remove('show');
     };
-    panelEl.querySelectorAll('.row').forEach(r => {
+    closeEl.onmouseenter = () => {
+      clearTimeout(hideTimer);
+      panelEl.classList.add('hovering');
+      descEl.classList.remove('show');
+    };
+    closeEl.onmouseleave = () => {
+      panelEl.classList.remove('hovering');
+    };
+    panelEl.querySelectorAll('.hit').forEach(r => {
       r.addEventListener('mouseenter', () => {
         clearTimeout(hideTimer);
         const k = r.dataset.key;
@@ -377,6 +396,10 @@
         panelEl.classList.add('hovering');
         descLabel.textContent = k;
         descText.textContent = d;
+        const rect = r.getBoundingClientRect();
+        const rowBelowMidpoint = rect.top + rect.height / 2 > window.innerHeight / 2;
+        descEl.classList.toggle('top', rowBelowMidpoint);
+        toastEl.classList.toggle('bottom', rowBelowMidpoint);
         descEl.classList.add('show');
       });
       r.addEventListener('mouseleave', () => {
@@ -393,9 +416,9 @@
   }
 
   function updateLiveRows() {
-    const vpRow = panelEl.querySelector('.row[data-key="viewport"] .v');
+    const vpRow = panelEl.querySelector('.hit[data-key="viewport"] .v');
     if (vpRow) vpRow.textContent = `${window.innerWidth} × ${window.innerHeight}`;
-    const scRow = panelEl.querySelector('.row[data-key="screen"] .v');
+    const scRow = panelEl.querySelector('.hit[data-key="screen"] .v');
     if (scRow) scRow.textContent = `${window.screen.width} × ${window.screen.height} @ ${window.devicePixelRatio}x`;
   }
   window.addEventListener('resize', () => {
