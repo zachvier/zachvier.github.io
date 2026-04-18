@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>uses · zachvivier.com</title>
+<title>privacy · zachvivier.com</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -88,18 +88,16 @@
     color: var(--dim);
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    margin: 2rem 0 0.5rem;
+    margin: 2rem 0 0.75rem;
     font-weight: normal;
   }
-  .row {
-    display: grid;
-    grid-template-columns: 10rem 1fr;
-    gap: 1rem;
-    padding: 0.15rem 0;
-    border-bottom: 1px dotted rgba(255,255,255,0.06);
+  p { margin: 0 0 0.9rem; }
+  a.inline { color: var(--fg); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.35); }
+  a.inline:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  code {
+    color: var(--accent);
+    font-size: 0.8rem;
   }
-  .k { color: var(--dim); }
-  .v { word-break: break-word; }
   .updated {
     color: var(--dim);
     font-size: 0.7rem;
@@ -120,50 +118,35 @@
   }
   footer a { color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--dim); }
   footer a:hover { color: var(--fg); border-bottom-color: var(--fg); }
-  @media (max-width: 520px) {
-    .row { grid-template-columns: 7rem 1fr; gap: 0.75rem; }
-  }
 </style>
 </head>
 <body>
 <main>
-  <h1>uses</h1>
-  <div class="sub reveal">what i actually use · <a href="/">home</a></div>
+  <h1>privacy</h1>
+  <div class="sub reveal">how this site handles your data · <a href="/">home</a></div>
 
-  <h2 class="reveal">computers</h2>
-  <div class="row reveal"><div class="k">laptop</div><div class="v">MacBook Pro · Apple M3 Pro (2023)</div></div>
-  <div class="row reveal"><div class="k">desktop</div><div class="v">custom Windows 11 · Ryzen 7 7800X3D · RTX 5080 · 32GB DDR5</div></div>
-  <div class="row reveal"><div class="k">phone</div><div class="v">iPhone 17 Pro Max</div></div>
-  <div class="row reveal"><div class="k">tablet</div><div class="v">iPad Pro</div></div>
+  <h2 class="reveal">the short version</h2>
+  <p class="reveal">This site is a handful of static HTML pages served by GitHub Pages. It sets no cookies, runs no analytics, and has no backend of its own. The only page that touches your data is <a class="inline" href="/ip">/ip</a>, which looks up your own IP so it can show it back to you.</p>
 
-  <h2 class="reveal">homelab</h2>
-  <div class="row reveal"><div class="k">server</div><div class="v">Dell OptiPlex 7050 · Ubuntu 24.04 (headless)</div></div>
-  <div class="row reveal"><div class="k">dns</div><div class="v">Raspberry Pi 5 running Pi-hole</div></div>
-  <div class="row reveal"><div class="k">monitoring</div><div class="v">Prometheus + Grafana</div></div>
-  <div class="row reveal"><div class="k">network</div><div class="v">Tailscale for remote access</div></div>
+  <h2 class="reveal">what each page does</h2>
+  <p class="reveal"><code>/</code> &mdash; static landing page. No network requests beyond loading the page itself.</p>
+  <p class="reveal"><code>/uses</code> &mdash; static list of hardware and software. No network requests beyond loading the page itself.</p>
+  <p class="reveal"><code>/ip</code> &mdash; from your browser, asks <a class="inline" href="https://www.ipify.org/" target="_blank" rel="noopener">ipify.org</a> for your public IPv4 and IPv6, then asks <a class="inline" href="https://ipapi.co/" target="_blank" rel="noopener">ipapi.co</a> to enrich that IP with country, region, and ISP. Those providers see your IP as part of any normal web request. Nothing is stored on my end &mdash; the results are rendered in your browser and discarded when you close the tab.</p>
+  <p class="reveal"><code>/privacy</code> &mdash; this page. Static.</p>
 
-  <h2 class="reveal">desk</h2>
-  <div class="row reveal"><div class="k">display</div><div class="v">Samsung Odyssey OLED G9 G95SC · 49"</div></div>
-  <div class="row reveal"><div class="k">chair</div><div class="v">Secretlab Titan Evo</div></div>
-  <div class="row reveal"><div class="k">keyboard</div><div class="v">Keychron K4 HE · Logitech MX Mechanical</div></div>
-  <div class="row reveal"><div class="k">mouse</div><div class="v">Logitech MX Master 4</div></div>
+  <h2 class="reveal">what i don't do</h2>
+  <p class="reveal">No analytics. No tracking pixels. No cookies. No localStorage. No account system. No newsletter. No ads. No third-party scripts beyond the two IP lookups on <code>/ip</code>.</p>
 
-  <h2 class="reveal">workshop</h2>
-  <div class="row reveal"><div class="k">3d printer</div><div class="v">Bambu Lab P1S</div></div>
+  <h2 class="reveal">hosting &amp; logs</h2>
+  <p class="reveal">The site is hosted on <a class="inline" href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a> with DNS via <a class="inline" href="https://www.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>. Both see standard request metadata (IP, user agent, referrer) the way any web host does. I don't have access to server-side logs on GitHub Pages, and I don't run any analytics layer on top. Their privacy policies cover what they collect.</p>
 
-  <h2 class="reveal">software</h2>
-  <div class="row reveal"><div class="k">editor</div><div class="v">Visual Studio Code</div></div>
-  <div class="row reveal"><div class="k">terminal</div><div class="v">default (macOS Terminal / Windows Terminal)</div></div>
-  <div class="row reveal"><div class="k">browser</div><div class="v">Chrome</div></div>
-  <div class="row reveal"><div class="k">notes</div><div class="v">Obsidian</div></div>
-  <div class="row reveal"><div class="k">packages</div><div class="v">Homebrew</div></div>
+  <h2 class="reveal">source</h2>
+  <p class="reveal">The whole site is open source &mdash; you can verify any of the above by reading the code: <a class="inline" href="https://github.com/zachvier/zachvier.github.io" target="_blank" rel="noopener">github.com/zachvier/zachvier.github.io</a>.</p>
 
-  <h2 class="reveal">dev</h2>
-  <div class="row reveal"><div class="k">ai</div><div class="v">Claude · Claude Code</div></div>
-  <div class="row reveal"><div class="k">vcs</div><div class="v">git · GitHub</div></div>
-  <div class="row reveal"><div class="k">hosting</div><div class="v">GitHub Pages · Cloudflare (DNS)</div></div>
+  <h2 class="reveal">questions</h2>
+  <p class="reveal">Reach me at <a class="inline" href="mailto:zach@zachvivier.com">zach@zachvivier.com</a>.</p>
 
-  <div class="updated reveal">last updated 2026-04-17</div>
+  <div class="updated reveal">last updated 2026-04-18</div>
 </main>
 <footer>zachvivier.com · <a href="https://github.com/zachvier/zachvier.github.io" target="_blank" rel="noopener">source</a> · <a href="/privacy">privacy</a></footer>
 <script>
@@ -183,20 +166,18 @@
     }
 
     const headDelay = 180;
-    const rowDelay = 45;
+    const rowDelay = 60;
     let t = 0;
     items.forEach((el) => {
       const isHead = el.tagName === 'H2' || el.classList.contains('sub');
       t += isHead ? headDelay : rowDelay;
       setTimeout(() => {
         el.classList.add('in');
-        // move cursor to the end of the most recently revealed element
         el.appendChild(cursor);
       }, t);
     });
 
     setTimeout(() => {
-      // settle cursor back at the title
       h1.appendChild(cursor);
     }, t + 400);
   })();
