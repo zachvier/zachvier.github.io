@@ -7,18 +7,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
+    --bg: #000;
     --fg: #e6e6e6;
     --dim: #7a7a7a;
     --accent: #9ad1ff;
+    --scanline: rgba(255,255,255,0.025);
+    --vignette: rgba(0,0,0,0.6);
+    --nav-border: rgba(255,255,255,0.15);
+    --nav-bg: rgba(255,255,255,0.03);
+    --nav-accent-border: rgba(154,209,255,0.45);
+    --nav-accent-bg: rgba(154,209,255,0.05);
+    --link-underline: rgba(255,255,255,0.25);
+    --text-glow: rgba(230,230,230,0.25);
+  }
+  :root[data-theme="light"] {
+    --bg: #2a2a2a;
+    --fg: #e6e6e6;
+    --dim: #8a8a8a;
+    --accent: #9ad1ff;
+    --scanline: rgba(255,255,255,0.02);
+    --vignette: rgba(0,0,0,0.35);
+    --nav-border: rgba(255,255,255,0.12);
+    --nav-bg: rgba(255,255,255,0.04);
+    --nav-accent-border: rgba(154,209,255,0.45);
+    --nav-accent-bg: rgba(154,209,255,0.06);
+    --link-underline: rgba(255,255,255,0.22);
+    --text-glow: rgba(230,230,230,0.18);
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0;
     height: 100%;
-    background: #000;
+    background: var(--bg);
     color: var(--fg);
     font-family: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
     overflow: hidden;
+    transition: background 0.25s, color 0.25s;
   }
   body::before {
     content: "";
@@ -27,8 +51,8 @@
     pointer-events: none;
     background: repeating-linear-gradient(
       to bottom,
-      rgba(255,255,255,0.025) 0px,
-      rgba(255,255,255,0.025) 1px,
+      var(--scanline) 0px,
+      var(--scanline) 1px,
       transparent 1px,
       transparent 3px
     );
@@ -39,7 +63,7 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.6) 100%);
+    background: radial-gradient(ellipse at center, transparent 55%, var(--vignette) 100%);
     z-index: 3;
   }
   main {
@@ -55,9 +79,9 @@
     font-size: 1rem;
     letter-spacing: 0.15em;
     color: var(--fg);
-    text-shadow: 0 0 8px rgba(230,230,230,0.25);
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.03);
+    text-shadow: 0 0 8px var(--text-glow);
+    border: 1px solid var(--nav-border);
+    background: var(--nav-bg);
     padding: 0.55rem 0.9rem;
     cursor: pointer;
     user-select: none;
@@ -70,8 +94,8 @@
   }
   #nav:hover, #nav.open {
     color: var(--accent);
-    border-color: rgba(154,209,255,0.45);
-    background: rgba(154,209,255,0.05);
+    border-color: var(--nav-accent-border);
+    background: var(--nav-accent-bg);
   }
   #nav .label { color: var(--dim); }
   #nav:hover .label, #nav.open .label { color: var(--accent); }
@@ -87,7 +111,7 @@
   #nav .links a {
     color: var(--fg);
     text-decoration: none;
-    border-bottom: 1px dotted rgba(255,255,255,0.25);
+    border-bottom: 1px dotted var(--link-underline);
   }
   #nav .links a:hover {
     color: var(--accent);
@@ -121,6 +145,22 @@
   }
   footer a { color: var(--dim); text-decoration: none; border-bottom: 1px dotted var(--dim); }
   footer a:hover { color: var(--fg); border-bottom-color: var(--fg); }
+  #themeToggle {
+    position: fixed;
+    bottom: 0.5rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: var(--dim);
+    cursor: pointer;
+    padding: 0.4rem;
+    font-size: 1rem;
+    line-height: 1;
+    z-index: 5;
+    transition: color 0.2s;
+  }
+  #themeToggle:hover { color: var(--fg); }
+  #themeToggle svg { display: block; width: 1em; height: 1em; }
 </style>
 </head>
 <body>
@@ -134,7 +174,29 @@
   </div>
 </main>
 <footer>zachvivier.com · <a href="https://github.com/zachvier/zachvier.github.io" target="_blank" rel="noopener">source</a> · <a href="/privacy">privacy</a></footer>
+<button id="themeToggle" type="button" aria-label="Toggle color scheme" title="Toggle color scheme">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>
+  </svg>
+</button>
 <script>
+  (() => {
+    const saved = localStorage.getItem('theme');
+    const prefersLight = matchMedia('(prefers-color-scheme: light)').matches;
+    const initial = saved || (prefersLight ? 'light' : 'dark');
+    if (initial === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+      }
+    });
+  })();
+
   const nav = document.getElementById('nav');
   nav.addEventListener('click', (e) => {
     if (e.target.tagName === 'A') return;
