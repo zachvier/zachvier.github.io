@@ -173,7 +173,9 @@
     transform: translateX(-50%);
     max-width: 640px;
     width: calc(100% - 3rem);
-    background: rgba(255,255,255,0.06);
+    background: rgba(20,20,20,0.72);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 4px;
     padding: 0.75rem 1rem;
@@ -307,7 +309,7 @@
     'utc': 'Current time in UTC — the timezone-neutral reference used by servers and logs.',
     'user agent': 'The identifier your browser sends with every request. Declares browser, engine, OS, and version.',
     'language': 'Your browser\'s preferred language, sent in the Accept-Language header.',
-    'platform': 'The OS platform your browser reports. Modern browsers sometimes freeze this for privacy.',
+    'platform': 'The OS platform your browser reports. Apple freezes this as "MacIntel" on all Macs (including Apple Silicon) for web compatibility — Chromium browsers expose the real architecture via userAgentData.',
     'viewport': 'Size of the visible browser window in CSS pixels — what your page actually has to work with.',
     'screen': 'Your physical screen\'s resolution and pixel density. The multiplier reflects Retina/HiDPI scaling.',
     'color scheme': 'Whether your OS is currently in light or dark mode. Sites can respect this via CSS prefers-color-scheme.'
@@ -358,6 +360,17 @@
 
     const all = panelEl.querySelectorAll('.row, h2');
     all.forEach((el, i) => { el.style.animationDelay = (i * 40) + 'ms'; });
+
+    if (navigator.userAgentData?.getHighEntropyValues) {
+      navigator.userAgentData.getHighEntropyValues(['platform', 'platformVersion', 'architecture', 'bitness']).then(ua => {
+        const parts = [];
+        if (ua.platform) parts.push(ua.platform);
+        if (ua.architecture) parts.push(ua.architecture + (ua.bitness ? ua.bitness : ''));
+        if (!parts.length) return;
+        const platRow = panelEl.querySelector('.row[data-key="platform"] .v');
+        if (platRow) platRow.textContent = parts.join(' ');
+      }).catch(() => {});
+    }
 
     const descEl = document.getElementById('desc');
     const descLabel = descEl.querySelector('.label');
