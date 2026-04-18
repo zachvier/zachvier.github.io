@@ -259,17 +259,17 @@
     right: 0.9rem;
     background: none;
     border: none;
-    color: rgba(255,255,255,0.18);
+    color: var(--fg);
     cursor: pointer;
     padding: 0.25rem;
     font-size: 0.85rem;
     line-height: 1;
     z-index: 5;
-    transition: color 0.2s, transform 0.3s;
+    transition: filter 0.2s, transform 0.3s;
     animation: fadeIn 2.5s ease-out 0.9s both;
   }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  #themeToggle:hover { color: var(--fg); }
+  #themeToggle:hover { filter: drop-shadow(0 0 4px var(--fg)) drop-shadow(0 0 8px var(--fg)); }
   #themeToggle .icon {
     display: block;
     width: 1em;
