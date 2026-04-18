@@ -198,11 +198,16 @@
   #detailPanel {
     min-width: 0;
     max-width: 0;
+    height: 0;
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
     transform: translateX(1rem);
-    transition: max-width 0.45s ease, opacity 0.22s ease, transform 0.35s ease;
+    transition:
+      max-width 0.45s ease,
+      height 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+      opacity 0.22s ease,
+      transform 0.35s ease;
   }
   #statusShell.detail #detailPanel {
     max-width: 38rem;
@@ -374,13 +379,14 @@
     }
     #detailPanel {
       max-width: 100%;
-      max-height: 0;
       transform: translateY(0.85rem);
-      transition: max-height 0.45s ease, opacity 0.22s ease, transform 0.35s ease;
+      transition:
+        height 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+        opacity 0.22s ease,
+        transform 0.35s ease;
     }
     #statusShell.detail #detailPanel {
       max-width: 100%;
-      max-height: 2600px;
     }
   }
   @media (max-width: 520px) {
@@ -551,6 +557,7 @@
   };
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const narrowLayout = matchMedia('(max-width: 760px)');
   const pageTitle = document.getElementById('pageTitle');
   const statusShell = document.getElementById('statusShell');
   const statusItems = Array.from(document.querySelectorAll('.statusItem'));
@@ -567,6 +574,8 @@
 
   let activeSection = '';
   let revealTimers = [];
+  let panelHeightFrame = 0;
+  let panelHeightListener = null;
 
   function escapeHtml(text) {
     return String(text)
@@ -634,6 +643,57 @@
     revealTimers = [];
   }
 
+  function clearPanelHeightAnimation() {
+    if (panelHeightFrame) {
+      cancelAnimationFrame(panelHeightFrame);
+      panelHeightFrame = 0;
+    }
+
+    if (panelHeightListener) {
+      detailPanel.removeEventListener('transitionend', panelHeightListener);
+      panelHeightListener = null;
+    }
+  }
+
+  function measureOpenPanelHeight() {
+    const previousHeight = detailPanel.style.height;
+    detailPanel.style.height = 'auto';
+    const nextHeight = detailPanel.scrollHeight;
+    detailPanel.style.height = previousHeight;
+    return nextHeight;
+  }
+
+  function animatePanelHeight(fromHeight, toHeight, keepAuto = false) {
+    clearPanelHeightAnimation();
+
+    const start = Math.max(0, Math.round(fromHeight));
+    const end = Math.max(0, Math.round(toHeight));
+
+    if (reduceMotion || start === end) {
+      detailPanel.style.height = keepAuto && end > 0 ? 'auto' : end + 'px';
+      return;
+    }
+
+    detailPanel.style.height = start + 'px';
+    void detailPanel.offsetHeight;
+
+    panelHeightListener = (event) => {
+      if (event.target !== detailPanel || event.propertyName !== 'height') return;
+      detailPanel.removeEventListener('transitionend', panelHeightListener);
+      panelHeightListener = null;
+
+      if (keepAuto && end > 0) {
+        detailPanel.style.height = 'auto';
+      }
+    };
+
+    detailPanel.addEventListener('transitionend', panelHeightListener);
+    panelHeightFrame = requestAnimationFrame(() => {
+      detailPanel.style.height = end + 'px';
+      panelHeightFrame = 0;
+    });
+  }
+
   function revealPanel() {
     clearReveals();
     const items = detailContent.querySelectorAll('.reveal');
@@ -677,23 +737,44 @@
     const section = sections[sectionId];
     if (!section) return;
 
+    const wasOpen = Boolean(activeSection);
+    const startHeight = wasOpen ? detailPanel.getBoundingClientRect().height : 0;
+
     activeSection = sectionId;
     detailTitle.textContent = section.title;
     detailSub.textContent = section.subtitle;
     detailContent.innerHTML = renderPanel(section);
     syncState();
+
+    if (wasOpen || narrowLayout.matches) {
+      animatePanelHeight(startHeight, measureOpenPanelHeight(), true);
+    } else {
+      clearPanelHeightAnimation();
+      detailPanel.style.height = 'auto';
+    }
+
     revealPanel();
 
     if (updateUrl) updateHash(sectionId);
   }
 
   function closeSection(updateUrl = true) {
+    const wasOpen = Boolean(activeSection);
+    const startHeight = wasOpen ? detailPanel.getBoundingClientRect().height : 0;
+
     activeSection = '';
     clearReveals();
     detailTitle.textContent = '';
     detailSub.textContent = '';
     detailContent.innerHTML = '';
     syncState();
+
+    if (wasOpen) {
+      animatePanelHeight(startHeight, 0);
+    } else {
+      clearPanelHeightAnimation();
+      detailPanel.style.height = '0px';
+    }
 
     if (updateUrl) updateHash('');
   }
