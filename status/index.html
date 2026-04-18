@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>status · zachvivier.com</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #000;
+    --bg-solid: #000;
+    --fg: #e6e6e6;
+    --dim: #7a7a7a;
+    --accent: #9ad1ff;
+    --scanline: rgba(255,255,255,0.025);
+    --vignette: rgba(0,0,0,0.6);
+    --row-border: rgba(255,255,255,0.06);
+    --panel-bg: rgba(255,255,255,0.03);
+    --panel-border: rgba(255,255,255,0.12);
+  }
+  :root[data-theme="light"] {
+    --bg: #2a2a2a;
+    --bg-solid: #2a2a2a;
+    --fg: #e6e6e6;
+    --dim: #8a8a8a;
+    --accent: #9ad1ff;
+    --scanline: rgba(255,255,255,0.02);
+    --vignette: rgba(0,0,0,0.35);
+    --row-border: rgba(255,255,255,0.06);
+    --panel-bg: rgba(255,255,255,0.04);
+    --panel-border: rgba(255,255,255,0.1);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    transition: background 0.25s, color 0.25s;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--scanline) 0px,
+      var(--scanline) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    z-index: 2;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, var(--vignette) 100%);
+    z-index: 3;
+  }
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 3rem 1.5rem 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #statusShell {
+    width: min(880px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    justify-content: center;
+    row-gap: 1.5rem;
+    column-gap: 0;
+    transition: column-gap 0.35s ease;
+  }
+  #statusShell.detail {
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 38rem);
+    column-gap: 2rem;
+  }
+  #menuColumn {
+    width: min(18rem, 100%);
+    justify-self: center;
+    transition: transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  #statusShell.detail #menuColumn {
+    justify-self: end;
+    transform: translateX(-0.75rem);
+  }
+  h1 {
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    color: var(--fg);
+    margin: 0 0 0.25rem;
+    font-weight: normal;
+  }
+  .cursor {
+    display: inline-block;
+    width: 0.55ch;
+    animation: blink 1.1s steps(2, start) infinite;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  @keyframes blink { to { visibility: hidden; } }
+  .sub {
+    color: var(--dim);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+  .sub a {
+    color: var(--dim);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--dim);
+  }
+  .sub a:hover {
+    color: var(--fg);
+    border-bottom-color: var(--fg);
+  }
+  .statusList {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 2.15rem;
+  }
+  .statusItem {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.95rem;
+    letter-spacing: 0.15em;
+    text-transform: lowercase;
+    text-align: left;
+    transition:
+      transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+      color 0.2s,
+      opacity 0.2s,
+      letter-spacing 0.2s;
+  }
+  .statusItem:disabled {
+    cursor: default;
+  }
+  .statusItem .prompt {
+    color: var(--dim);
+    transition: color 0.2s;
+    flex: 0 0 auto;
+  }
+  .statusItem .textWrap {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.1rem;
+    min-width: 1ch;
+    border-bottom: 1px dotted transparent;
+    transition: border-bottom-color 0.2s;
+  }
+  .statusItem .text {
+    min-width: 1ch;
+    overflow-wrap: anywhere;
+  }
+  .statusItem:hover,
+  .statusItem:focus-visible,
+  .statusItem.is-active {
+    color: var(--accent);
+    outline: none;
+  }
+  .statusItem:hover .prompt,
+  .statusItem:focus-visible .prompt,
+  .statusItem.is-active .prompt {
+    color: var(--accent);
+  }
+  .statusItem:hover .textWrap,
+  .statusItem:focus-visible .textWrap,
+  .statusItem.is-active .textWrap {
+    border-bottom-color: var(--accent);
+  }
+  .statusItem.is-dimmed {
+    opacity: 0.45;
+  }
+  #statusShell.detail .statusItem.is-active {
+    transform: translateX(-0.9rem);
+    letter-spacing: 0.17em;
+  }
+  #detailPanel {
+    min-width: 0;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateX(1rem);
+    transition: max-width 0.45s ease, opacity 0.22s ease, transform 0.35s ease;
+  }
+  #statusShell.detail #detailPanel {
+    max-width: 38rem;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .detailFrame {
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    padding: 0.95rem 1rem 1.1rem;
+  }
+  .detailHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.15rem;
+  }
+  .detailTitle {
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: lowercase;
+  }
+  .detailSub {
+    margin-top: 0.35rem;
+    color: var(--dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+  }
+  #backBtn {
+    border: 0;
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  #backBtn:hover,
+  #backBtn:focus-visible {
+    color: var(--fg);
+    outline: none;
+  }
+  .panelSection {
+    margin-top: 1.8rem;
+  }
+  .panelSection:first-child {
+    margin-top: 0;
+  }
+  .panelSectionTitle {
+    font-size: 0.75rem;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin: 0 0 0.5rem;
+    font-weight: normal;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 1rem;
+    padding: 0.15rem 0;
+    border-bottom: 1px dotted var(--row-border);
+  }
+  .k { color: var(--dim); }
+  .v { word-break: break-word; }
+  .updated {
+    color: var(--dim);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    margin-top: 2.4rem;
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+  }
+  footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    color: var(--dim);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    z-index: 4;
+    background: linear-gradient(to top, var(--bg-solid) 75%, transparent);
+    padding: 2rem 0 0.75rem;
+  }
+  footer a {
+    color: var(--dim);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--dim);
+  }
+  footer a:hover {
+    color: var(--fg);
+    border-bottom-color: var(--fg);
+  }
+  #themeToggle {
+    position: fixed;
+    bottom: 0.55rem;
+    right: 0.9rem;
+    background: none;
+    border: none;
+    color: var(--fg);
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    z-index: 5;
+    transition: filter 0.2s;
+    animation: fadeIn 2.5s ease-out 0.9s both;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  #themeToggle:hover {
+    filter: drop-shadow(0 0 4px var(--fg)) drop-shadow(0 0 8px var(--fg));
+  }
+  #themeToggle .icon {
+    display: block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask: url(/moon.svg) no-repeat center / contain;
+    mask: url(/moon.svg) no-repeat center / contain;
+  }
+  :root[data-theme="light"] #themeToggle .icon {
+    -webkit-mask-image: url(/earth.svg);
+    mask-image: url(/earth.svg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #statusShell,
+    #menuColumn,
+    .statusItem,
+    #detailPanel,
+    .reveal {
+      transition: none;
+      animation: none;
+    }
+    .reveal {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (max-width: 760px) {
+    main {
+      align-items: flex-start;
+    }
+    #statusShell,
+    #statusShell.detail {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 1.5rem;
+    }
+    #menuColumn,
+    #statusShell.detail #menuColumn {
+      justify-self: center;
+      width: min(22rem, 100%);
+      transform: none;
+    }
+    #statusShell.detail .statusItem.is-active {
+      transform: translateY(-0.3rem);
+    }
+    #detailPanel {
+      max-width: 100%;
+      max-height: 0;
+      transform: translateY(0.85rem);
+      transition: max-height 0.45s ease, opacity 0.22s ease, transform 0.35s ease;
+    }
+    #statusShell.detail #detailPanel {
+      max-width: 100%;
+      max-height: 2600px;
+    }
+  }
+  @media (max-width: 520px) {
+    .statusList {
+      gap: 0.55rem;
+    }
+    .row {
+      grid-template-columns: 7rem 1fr;
+      gap: 0.75rem;
+    }
+    .detailFrame {
+      padding: 0.95rem 0.9rem 1.05rem;
+    }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div id="statusShell">
+    <section id="menuColumn" aria-label="status navigation">
+      <h1 id="pageTitle">status</h1>
+      <div class="sub">current signals &middot; <a href="/">home</a></div>
+
+      <div class="statusList" id="statusList">
+        <button class="statusItem" type="button" data-section="stack" data-label="stack" style="--index: 0" disabled>
+          <span class="prompt">~/</span>
+          <span class="textWrap"><span class="text"></span></span>
+        </button>
+        <button class="statusItem" type="button" data-section="projects" data-label="projects" style="--index: 1" disabled>
+          <span class="prompt">~/</span>
+          <span class="textWrap"><span class="text"></span></span>
+        </button>
+        <button class="statusItem" type="button" data-section="notes" data-label="notes" style="--index: 2" disabled>
+          <span class="prompt">~/</span>
+          <span class="textWrap"><span class="text"></span></span>
+        </button>
+      </div>
+    </section>
+
+    <section id="detailPanel" aria-live="polite" aria-label="status details">
+      <div class="detailFrame">
+        <div class="detailHead">
+          <div>
+            <div class="detailTitle" id="detailTitle"></div>
+            <div class="detailSub" id="detailSub"></div>
+          </div>
+          <button id="backBtn" type="button" aria-label="Close detail panel">[esc]</button>
+        </div>
+        <div id="detailContent"></div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer>zachvivier.com &middot; <a href="https://github.com/zachvier/zachvier.github.io" target="_blank" rel="noopener">source</a> &middot; <a href="/privacy">privacy</a></footer>
+<button id="themeToggle" type="button" aria-label="Toggle color scheme" title="Toggle color scheme"><span class="icon" aria-hidden="true"></span></button>
+<script>
+  (() => {
+    const saved = localStorage.getItem('theme');
+    const prefersLight = matchMedia('(prefers-color-scheme: light)').matches;
+    const initial = saved || (prefersLight ? 'light' : 'dark');
+    if (initial === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+      }
+    });
+  })();
+
+  const sections = {
+    projects: {
+      title: 'projects',
+      subtitle: 'work in progress',
+      groups: [
+        {
+          title: 'status',
+          rows: [
+            ['state', 'work in progress']
+          ]
+        },
+        {
+          title: 'later',
+          rows: [
+            ['state', 'work in progress']
+          ]
+        }
+      ]
+    },
+    notes: {
+      title: 'notes',
+      subtitle: 'work in progress',
+      groups: [
+        {
+          title: 'status',
+          rows: [
+            ['state', 'work in progress']
+          ]
+        },
+        {
+          title: 'later',
+          rows: [
+            ['state', 'work in progress']
+          ]
+        }
+      ]
+    },
+    stack: {
+      title: 'stack',
+      subtitle: 'hardware and software in current rotation',
+      groups: [
+        {
+          title: 'computers',
+          rows: [
+            ['laptop', 'MacBook Pro'],
+            ['desktop', '7800X3D · RTX 5080'],
+            ['phone', 'iPhone 17 Pro Max'],
+            ['tablet', 'iPad Pro']
+          ]
+        },
+        {
+          title: 'homelab',
+          rows: [
+            ['servers', 'Dell OptiPlex 7050 · Raspberry Pi 5'],
+            ['monitoring', 'Prometheus + Grafana'],
+            ['network', 'Tailscale']
+          ]
+        },
+        {
+          title: 'desk',
+          rows: [
+            ['display', 'Samsung Odyssey OLED G9 G95SC · 49"'],
+            ['chair', 'Secretlab Titan Evo'],
+            ['keyboard', 'Keychron K4 HE · Logitech MX Mechanical'],
+            ['mouse', 'Logitech MX Master 4']
+          ]
+        },
+        {
+          title: 'workshop',
+          rows: [
+            ['3d printer', 'Bambu Lab P1S']
+          ]
+        },
+        {
+          title: 'software',
+          rows: [
+            ['editor', 'Visual Studio Code'],
+            ['terminal', 'default (macOS Terminal / Windows Terminal)'],
+            ['browser', 'Chrome'],
+            ['notes', 'Obsidian'],
+            ['packages', 'Homebrew']
+          ]
+        },
+        {
+          title: 'dev',
+          rows: [
+            ['ai', 'Claude · Claude Code'],
+            ['vcs', 'git · GitHub'],
+            ['hosting', 'GitHub Pages · Cloudflare (DNS)']
+          ]
+        }
+      ],
+      updated: 'last updated 2026-04-18'
+    }
+  };
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pageTitle = document.getElementById('pageTitle');
+  const statusShell = document.getElementById('statusShell');
+  const statusItems = Array.from(document.querySelectorAll('.statusItem'));
+  const detailPanel = document.getElementById('detailPanel');
+  const detailTitle = document.getElementById('detailTitle');
+  const detailSub = document.getElementById('detailSub');
+  const detailContent = document.getElementById('detailContent');
+  const backBtn = document.getElementById('backBtn');
+
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '█';
+  pageTitle.appendChild(cursor);
+
+  let activeSection = '';
+  let revealTimers = [];
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function typeMenu() {
+    if (reduceMotion) {
+      statusItems.forEach((item) => {
+        item.querySelector('.text').textContent = item.dataset.label;
+        item.disabled = false;
+      });
+      pageTitle.appendChild(cursor);
+      return;
+    }
+
+    await sleep(220);
+
+    for (const item of statusItems) {
+      const textEl = item.querySelector('.text');
+      const wrapEl = item.querySelector('.textWrap');
+      textEl.textContent = '';
+      wrapEl.appendChild(cursor);
+
+      for (const ch of item.dataset.label) {
+        textEl.textContent += ch;
+        await sleep(ch === ' ' ? 28 : 48);
+      }
+
+      item.disabled = false;
+      await sleep(110);
+    }
+
+    pageTitle.appendChild(cursor);
+  }
+
+  function renderPanel(section) {
+    const groups = section.groups.map((group) => {
+      const title = group.title
+        ? '<h2 class="panelSectionTitle reveal">' + escapeHtml(group.title) + '</h2>'
+        : '';
+      const rows = group.rows.map(([key, value]) => (
+        '<div class="row reveal"><div class="k">' + escapeHtml(key) + '</div><div class="v">' + escapeHtml(value) + '</div></div>'
+      )).join('');
+      return '<section class="panelSection">' + title + rows + '</section>';
+    }).join('');
+
+    const updated = section.updated
+      ? '<div class="updated reveal">' + escapeHtml(section.updated) + '</div>'
+      : '';
+
+    return groups + updated;
+  }
+
+  function clearReveals() {
+    revealTimers.forEach(clearTimeout);
+    revealTimers = [];
+  }
+
+  function revealPanel() {
+    clearReveals();
+    const items = detailContent.querySelectorAll('.reveal');
+
+    if (reduceMotion) {
+      items.forEach((item) => item.classList.add('in'));
+      return;
+    }
+
+    const headDelay = 170;
+    const rowDelay = 45;
+    let totalDelay = 0;
+
+    items.forEach((item) => {
+      const isHead = item.tagName === 'H2' || item.classList.contains('updated');
+      totalDelay += isHead ? headDelay : rowDelay;
+      const timer = setTimeout(() => item.classList.add('in'), totalDelay);
+      revealTimers.push(timer);
+    });
+  }
+
+  function syncState() {
+    statusShell.classList.toggle('detail', Boolean(activeSection));
+    detailPanel.setAttribute('aria-hidden', activeSection ? 'false' : 'true');
+
+    statusItems.forEach((item) => {
+      const isActive = item.dataset.section === activeSection;
+      const isDimmed = Boolean(activeSection) && !isActive;
+      item.classList.toggle('is-active', isActive);
+      item.classList.toggle('is-dimmed', isDimmed);
+      item.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+    });
+  }
+
+  function updateHash(sectionId) {
+    const next = window.location.pathname + window.location.search + (sectionId ? '#' + sectionId : '');
+    history.replaceState(null, '', next);
+  }
+
+  function openSection(sectionId, updateUrl = true) {
+    const section = sections[sectionId];
+    if (!section) return;
+
+    activeSection = sectionId;
+    detailTitle.textContent = section.title;
+    detailSub.textContent = section.subtitle;
+    detailContent.innerHTML = renderPanel(section);
+    syncState();
+    revealPanel();
+
+    if (updateUrl) updateHash(sectionId);
+  }
+
+  function closeSection(updateUrl = true) {
+    activeSection = '';
+    clearReveals();
+    detailTitle.textContent = '';
+    detailSub.textContent = '';
+    detailContent.innerHTML = '';
+    syncState();
+
+    if (updateUrl) updateHash('');
+  }
+
+  statusItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      const sectionId = item.dataset.section;
+      if (sectionId === activeSection) {
+        closeSection();
+        return;
+      }
+      openSection(sectionId);
+    });
+  });
+
+  backBtn.addEventListener('click', () => closeSection());
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && activeSection) closeSection();
+  });
+
+  window.addEventListener('hashchange', () => {
+    const sectionId = window.location.hash.replace('#', '');
+    if (!sectionId) {
+      closeSection(false);
+      return;
+    }
+    if (sections[sectionId]) openSection(sectionId, false);
+  });
+
+  (async function init() {
+    syncState();
+    await typeMenu();
+
+    const initialSection = window.location.hash.replace('#', '');
+    if (sections[initialSection]) openSection(initialSection, false);
+  })();
+</script>
+</body>
+</html>

@@ -175,8 +175,9 @@
 
   <h2 class="reveal">what each page does</h2>
   <p class="reveal"><code>/</code> &mdash; static landing page. No network requests beyond loading the page itself.</p>
-  <p class="reveal"><code>/uses</code> &mdash; static list of hardware and software. No network requests beyond loading the page itself.</p>
+  <p class="reveal"><code>/status</code> &mdash; interactive status hub. Right now it contains <code>projects</code>, <code>notes</code>, and <code>stack</code>; <code>stack</code> is the old hardware/software inventory. No network requests beyond loading the page itself.</p>
   <p class="reveal"><code>/ip</code> &mdash; from your browser, asks <a class="inline" href="https://www.ipify.org/" target="_blank" rel="noopener">ipify.org</a> for your public IPv4 and IPv6, then asks <a class="inline" href="https://ipapi.co/" target="_blank" rel="noopener">ipapi.co</a> to enrich that IP with country, region, and ISP. Those providers see your IP as part of any normal web request. Nothing is stored on my end &mdash; the results are rendered in your browser and discarded when you close the tab.</p>
+  <p class="reveal"><code>/uses</code> &mdash; legacy redirect to <code>/status#stack</code>.</p>
   <p class="reveal"><code>/privacy</code> &mdash; this page. Static.</p>
 
   <h2 class="reveal">what i don't do</h2>
