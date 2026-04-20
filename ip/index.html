@@ -114,6 +114,13 @@
     transition: color 0.15s, border-color 0.15s;
   }
   #hint kbd:hover { color: var(--fg); border-color: var(--fg); }
+  #hint a {
+    color: var(--dim);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--dim);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  #hint a:hover { color: var(--fg); border-bottom-color: var(--fg); }
   #toast {
     position: fixed;
     top: 1.25rem;
@@ -287,7 +294,7 @@
 <body>
 <main>
   <div id="ip" title="click to copy"><span id="ipval"></span><span class="cursor">█</span></div>
-  <div id="hint">tap ip to copy · tap <kbd id="detailsBtn">?</kbd> for details · <a href="/" style="color:var(--dim);text-decoration:none;border-bottom:1px dotted var(--dim);">home</a></div>
+  <div id="hint">tap ip to copy · tap <kbd id="detailsBtn">?</kbd> for details · <a href="/">home</a></div>
 </main>
 <div id="toast">copied</div>
 <div id="details" role="dialog" aria-hidden="true">
@@ -312,6 +319,12 @@
       } else {
         document.documentElement.setAttribute('data-theme', 'light');
         localStorage.setItem('theme', 'light');
+      }
+      const csRow = document.querySelector('#panel .hit[data-key="color scheme"] .v');
+      if (csRow) {
+        const os = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const site = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        csRow.textContent = os === site ? os : `${os} · site set to ${site}`;
       }
     });
   })();
@@ -427,7 +440,11 @@
       ${row('platform', navigator.platform)}
       ${row('viewport', vp)}
       ${row('screen', screen)}
-      ${row('color scheme', matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')}
+      ${row('color scheme', (() => {
+        const os = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const site = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        return os === site ? os : `${os} · site set to ${site}`;
+      })())}
     `;
 
     const all = panelEl.querySelectorAll('.row, h2');
