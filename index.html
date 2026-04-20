@@ -197,17 +197,21 @@
     position: fixed;
     bottom: 0.55rem;
     left: 0.9rem;
-    color: var(--dim);
-    opacity: 0;
-    transition: opacity 0.3s, color 0.2s, filter 0.2s;
+    --glow: 0;
+    opacity: var(--glow);
+    color: color-mix(in srgb, var(--fg) calc(var(--glow) * 100%), var(--dim));
+    filter: drop-shadow(0 0 calc(4px * var(--glow)) var(--fg)) drop-shadow(0 0 calc(8px * var(--glow)) var(--fg));
+    transition: opacity 0.12s linear, color 0.12s linear, filter 0.12s linear;
     z-index: 5;
     line-height: 1;
     text-decoration: none;
   }
-  #linkedin:hover {
-    opacity: 1;
-    color: var(--fg);
-    filter: drop-shadow(0 0 4px var(--fg)) drop-shadow(0 0 8px var(--fg));
+  #linkedin:hover,
+  #linkedin.illuminated {
+    --glow: 1;
+  }
+  @media (hover: none) {
+    #linkedin { --glow: 0.25; transition: opacity 0.3s ease, color 0.3s ease, filter 0.3s ease; }
   }
   #linkedin svg {
     display: block;
@@ -297,6 +301,45 @@
     nav.classList.add('morphing');
     setTimeout(() => nav.classList.remove('morphing'), 500);
   });
+
+  (() => {
+    const linkedin = document.getElementById('linkedin');
+    if (!linkedin) return;
+    const canHover = matchMedia('(hover: hover)').matches;
+    if (canHover) {
+      const RADIUS = 65;
+      let pending = false;
+      let lastX = 0, lastY = 0;
+      const update = () => {
+        pending = false;
+        const rect = linkedin.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = lastX - cx;
+        const dy = lastY - cy;
+        const dist = Math.hypot(dx, dy);
+        const raw = Math.max(0, 1 - dist / RADIUS);
+        const eased = raw * raw * (3 - 2 * raw);
+        linkedin.style.setProperty('--glow', eased.toFixed(3));
+      };
+      window.addEventListener('mousemove', (e) => {
+        lastX = e.clientX;
+        lastY = e.clientY;
+        if (!pending) {
+          pending = true;
+          requestAnimationFrame(update);
+        }
+      });
+      window.addEventListener('mouseleave', () => linkedin.style.setProperty('--glow', '0'));
+    } else {
+      linkedin.addEventListener('click', (e) => {
+        if (!linkedin.classList.contains('illuminated')) {
+          e.preventDefault();
+          linkedin.classList.add('illuminated');
+        }
+      });
+    }
+  })();
 </script>
 </body>
 </html>
