@@ -570,8 +570,15 @@
   let wordleLoadStarted = false;
   let wordleLoadPromise = null;
 
+  const WORDLE_NAME_OVERRIDES = {
+    zeck: 'Zach',
+    WatTheOok: 'Ook'
+  };
+  const displayWordleName = name => WORDLE_NAME_OVERRIDES[name] ?? name;
+
   function buildWordleGroups(data) {
-    const players = Array.isArray(data.players) ? data.players : [];
+    const players = (Array.isArray(data.players) ? data.players : [])
+      .map(p => ({ ...p, name: displayWordleName(p.name) }));
     const byStreak = [...players].sort((a, b) => (b.streak ?? 0) - (a.streak ?? 0));
     const byAvg = [...players].sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0));
 
