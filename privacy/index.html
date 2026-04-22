@@ -171,17 +171,17 @@
   <div class="sub reveal">how this site handles your data · <a href="/">home</a></div>
 
   <h2 class="reveal">the short version</h2>
-  <p class="reveal">This site is a handful of static HTML pages served by GitHub Pages. It sets no cookies, runs no analytics, and has no backend of its own. The only page that touches your data is <a class="inline" href="/ip">/ip</a>, which looks up your own IP so it can show it back to you.</p>
+  <p class="reveal">This site is a handful of static HTML pages served by GitHub Pages. It sets no cookies, runs no analytics, and has no backend of its own. The only page that touches your data is <a class="inline" href="/ipinfo">/ipinfo</a>, which looks up your own IP so it can show it back to you.</p>
 
   <h2 class="reveal">what each page does</h2>
   <p class="reveal"><code>/</code> &mdash; static landing page. No network requests beyond loading the page itself.</p>
-  <p class="reveal"><code>/status</code> &mdash; interactive status hub. Right now it contains <code>projects</code>, <code>notes</code>, and <code>stack</code>; <code>stack</code> is the old hardware/software inventory. No network requests beyond loading the page itself.</p>
-  <p class="reveal"><code>/ip</code> &mdash; from your browser, asks <a class="inline" href="https://www.ipify.org/" target="_blank" rel="noopener">ipify.org</a> for your public IPv4 and IPv6, then asks <a class="inline" href="https://ipapi.co/" target="_blank" rel="noopener">ipapi.co</a> to enrich that IP with country, region, and ISP. Those providers see your IP as part of any normal web request. Nothing is stored on my end &mdash; the results are rendered in your browser and discarded when you close the tab.</p>
-  <p class="reveal"><code>/uses</code> &mdash; legacy redirect to <code>/status#stack</code>.</p>
+  <p class="reveal"><code>/stack</code> &mdash; interactive hub. Contains <code>homelab</code> (hardware/software inventory), <code>projects</code>, <code>notes</code>, and <code>wordle</code>. The <code>wordle</code> section fetches <code>/wordle-stats.json</code> from this same origin &mdash; a static file with 60-day streak and average scores for a small group of friends who play daily. No third-party requests.</p>
+  <p class="reveal"><code>/ipinfo</code> &mdash; from your browser, asks <a class="inline" href="https://www.ipify.org/" target="_blank" rel="noopener">ipify.org</a> for your public IPv4 and IPv6, then asks <a class="inline" href="https://ipapi.co/" target="_blank" rel="noopener">ipapi.co</a> to enrich that IP with country, region, and ISP. Those providers see your IP as part of any normal web request. Nothing is stored on my end &mdash; the results are rendered in your browser and discarded when you close the tab.</p>
+  <p class="reveal"><code>/uses</code> &mdash; legacy redirect to <code>/stack#homelab</code>.</p>
   <p class="reveal"><code>/privacy</code> &mdash; this page. Static.</p>
 
   <h2 class="reveal">what i don't do</h2>
-  <p class="reveal">No analytics. No tracking pixels. No cookies. No account system. No newsletter. No ads. No third-party scripts beyond the two IP lookups on <code>/ip</code>. The only localStorage use is a single <code>theme</code> key that remembers your light/dark preference &mdash; it lives in your browser and is never sent to me or anyone else.</p>
+  <p class="reveal">No analytics. No tracking pixels. No cookies. No account system. No newsletter. No ads. No third-party scripts beyond the two IP lookups on <code>/ipinfo</code>. The only localStorage use is a single <code>theme</code> key that remembers your light/dark preference &mdash; it lives in your browser and is never sent to me or anyone else.</p>
 
   <h2 class="reveal">hosting &amp; logs</h2>
   <p class="reveal">The site is hosted on <a class="inline" href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a> with DNS via <a class="inline" href="https://www.cloudflare.com/" target="_blank" rel="noopener">Cloudflare</a>. Both see standard request metadata (IP, user agent, referrer) the way any web host does. I don't have access to server-side logs on GitHub Pages, and I don't run any analytics layer on top. Their privacy policies cover what they collect.</p>

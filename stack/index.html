@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>status · zachvivier.com</title>
+<title>stack · zachvivier.com</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -406,12 +406,12 @@
 <body>
 <main>
   <div id="statusShell">
-    <section id="menuColumn" aria-label="status navigation">
-      <h1 id="pageTitle">status</h1>
+    <section id="menuColumn" aria-label="stack navigation">
+      <h1 id="pageTitle">stack</h1>
       <div class="sub">current signals &middot; <a href="/">home</a></div>
 
       <div class="statusList" id="statusList">
-        <button class="statusItem" type="button" data-section="stack" data-label="stack" style="--index: 0" disabled>
+        <button class="statusItem" type="button" data-section="homelab" data-label="homelab" style="--index: 0" disabled>
           <span class="prompt">~/</span>
           <span class="textWrap"><span class="text"></span></span>
         </button>
@@ -430,7 +430,7 @@
       </div>
     </section>
 
-    <section id="detailPanel" aria-live="polite" aria-label="status details">
+    <section id="detailPanel" aria-live="polite" aria-label="stack details">
       <div class="detailFrame">
         <div class="detailHead">
           <div>
@@ -501,21 +501,21 @@
         }
       ]
     },
-    stack: {
-      title: 'stack',
+    homelab: {
+      title: 'homelab',
       subtitle: 'hardware and software in current rotation',
       groups: [
         {
           title: 'computers',
           rows: [
             ['laptop', 'MacBook Pro'],
-            ['desktop', '7800X3D · RTX 5080'],
+            ['desktop', 'Ryzen 7 7700X · RTX 5080'],
             ['phone', 'iPhone 17 Pro Max'],
             ['tablet', 'iPad Pro']
           ]
         },
         {
-          title: 'homelab',
+          title: 'infra',
           rows: [
             ['servers', 'Dell OptiPlex 7050 · Raspberry Pi 5'],
             ['monitoring', 'Prometheus + Grafana'],
