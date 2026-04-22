@@ -278,6 +278,15 @@
   }
   .k { color: var(--dim); }
   .v { word-break: break-word; }
+  .v a {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--dim);
+  }
+  .v a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
   .updated {
     color: var(--dim);
     font-size: 0.7rem;
@@ -419,11 +428,7 @@
           <span class="prompt">~/</span>
           <span class="textWrap"><span class="text"></span></span>
         </button>
-        <button class="statusItem" type="button" data-section="notes" data-label="notes" style="--index: 2" disabled>
-          <span class="prompt">~/</span>
-          <span class="textWrap"><span class="text"></span></span>
-        </button>
-        <button class="statusItem" type="button" data-section="wordle" data-label="wordle" style="--index: 3" disabled>
+        <button class="statusItem" type="button" data-section="wordle" data-label="wordle" style="--index: 2" disabled>
           <span class="prompt">~/</span>
           <span class="textWrap"><span class="text"></span></span>
         </button>
@@ -467,36 +472,13 @@
   const sections = {
     projects: {
       title: 'projects',
-      subtitle: 'work in progress',
+      subtitle: 'things i tinker on',
       groups: [
         {
-          title: 'status',
           rows: [
-            ['state', 'work in progress']
-          ]
-        },
-        {
-          title: 'later',
-          rows: [
-            ['state', 'work in progress']
-          ]
-        }
-      ]
-    },
-    notes: {
-      title: 'notes',
-      subtitle: 'work in progress',
-      groups: [
-        {
-          title: 'status',
-          rows: [
-            ['state', 'work in progress']
-          ]
-        },
-        {
-          title: 'later',
-          rows: [
-            ['state', 'work in progress']
+            ['this site', 'static site · github pages', 'https://github.com/zachvier/zachvier.github.io'],
+            ['tabgrab', 'chrome extension for copying tabs', 'https://github.com/zachvier/TabGrab'],
+            ['wordle bot', 'discord bot that roasts daily wordle scores', 'https://github.com/zachvier/wordle-bot']
           ]
         }
       ]
@@ -695,9 +677,12 @@
       const title = group.title
         ? '<h2 class="panelSectionTitle reveal">' + escapeHtml(group.title) + '</h2>'
         : '';
-      const rows = group.rows.map(([key, value]) => (
-        '<div class="row reveal"><div class="k">' + escapeHtml(key) + '</div><div class="v">' + escapeHtml(value) + '</div></div>'
-      )).join('');
+      const rows = group.rows.map(([key, value, href]) => {
+        const valueHtml = href
+          ? '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + escapeHtml(value) + '</a>'
+          : escapeHtml(value);
+        return '<div class="row reveal"><div class="k">' + escapeHtml(key) + '</div><div class="v">' + valueHtml + '</div></div>';
+      }).join('');
       return '<section class="panelSection">' + title + rows + '</section>';
     }).join('');
 
