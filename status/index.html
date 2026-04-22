@@ -423,6 +423,10 @@
           <span class="prompt">~/</span>
           <span class="textWrap"><span class="text"></span></span>
         </button>
+        <button class="statusItem" type="button" data-section="wordle" data-label="wordle" style="--index: 3" disabled>
+          <span class="prompt">~/</span>
+          <span class="textWrap"><span class="text"></span></span>
+        </button>
       </div>
     </section>
 
@@ -553,8 +557,66 @@
         }
       ],
       updated: 'last updated 2026-04-18'
+    },
+    wordle: {
+      title: 'wordle',
+      subtitle: 'last 60 days · updates daily',
+      groups: [
+        { rows: [['state', 'loading…']] }
+      ]
     }
   };
+
+  let wordleLoadStarted = false;
+  let wordleLoadPromise = null;
+
+  function buildWordleGroups(data) {
+    const players = Array.isArray(data.players) ? data.players : [];
+    const byStreak = [...players].sort((a, b) => (b.streak ?? 0) - (a.streak ?? 0));
+    const byAvg = [...players].sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0));
+
+    const days = n => n + (n === 1 ? ' day' : ' days');
+
+    const groups = [
+      {
+        title: 'group',
+        rows: [['streak', days(data.group_streak ?? 0)]]
+      }
+    ];
+
+    if (byStreak.length) {
+      groups.push({
+        title: 'streaks',
+        rows: byStreak.map(p => [p.name, days(p.streak ?? 0)])
+      });
+      groups.push({
+        title: 'averages',
+        rows: byAvg.map(p => [p.name, typeof p.avg === 'number' ? p.avg.toFixed(2) : '—'])
+      });
+    }
+
+    return groups;
+  }
+
+  async function loadWordleData() {
+    try {
+      const res = await fetch('/wordle-stats.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      sections.wordle.groups = buildWordleGroups(data);
+      if (data.updated) sections.wordle.updated = 'last updated ' + data.updated;
+    } catch {
+      sections.wordle.groups = [{ rows: [['state', 'no data yet']] }];
+    }
+  }
+
+  function ensureWordleLoaded() {
+    if (!wordleLoadStarted) {
+      wordleLoadStarted = true;
+      wordleLoadPromise = loadWordleData();
+    }
+    return wordleLoadPromise;
+  }
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const narrowLayout = matchMedia('(max-width: 760px)');
@@ -756,6 +818,16 @@
     revealPanel();
 
     if (updateUrl) updateHash(sectionId);
+
+    if (sectionId === 'wordle') {
+      ensureWordleLoaded().then(() => {
+        if (activeSection !== 'wordle') return;
+        const currentHeight = detailPanel.getBoundingClientRect().height;
+        detailContent.innerHTML = renderPanel(section);
+        animatePanelHeight(currentHeight, measureOpenPanelHeight(), true);
+        revealPanel();
+      });
+    }
   }
 
   function closeSection(updateUrl = true) {
