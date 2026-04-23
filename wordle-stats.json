@@ -1,56 +1,56 @@
 {
-  "updated": "2026-04-22",
+  "updated": "2026-04-23",
   "window_start": "2026-03-25",
-  "window_end": "2026-04-21",
-  "group_streak": 28,
+  "window_end": "2026-04-22",
+  "group_streak": 29,
   "players": [
     {
       "name": "Angela",
-      "streak": 4,
-      "avg": 3.28,
-      "games": 25
-    },
-    {
-      "name": "cc_train",
-      "streak": 1,
-      "avg": 3.0,
-      "games": 1
+      "streak": 5,
+      "avg": 3.27,
+      "games": 26
     },
     {
       "name": "Kevin",
-      "streak": 28,
-      "avg": 3.86,
-      "games": 28
+      "streak": 29,
+      "avg": 3.93,
+      "games": 29
+    },
+    {
+      "name": "Michelle",
+      "streak": 2,
+      "avg": 3.0,
+      "games": 2
     },
     {
       "name": "Peachee",
-      "streak": 18,
-      "avg": 4.53,
-      "games": 19
+      "streak": 19,
+      "avg": 4.5,
+      "games": 20
     },
     {
       "name": "Victoria",
-      "streak": 22,
-      "avg": 4.42,
-      "games": 24
+      "streak": 23,
+      "avg": 4.36,
+      "games": 25
     },
     {
       "name": "WatTheOok",
-      "streak": 18,
-      "avg": 4.06,
-      "games": 18
+      "streak": 19,
+      "avg": 4.16,
+      "games": 19
     },
     {
       "name": "Winnie",
-      "streak": 20,
-      "avg": 4.15,
-      "games": 26
+      "streak": 21,
+      "avg": 4.26,
+      "games": 27
     },
     {
       "name": "zeck",
-      "streak": 26,
-      "avg": 3.81,
-      "games": 26
+      "streak": 27,
+      "avg": 3.89,
+      "games": 27
     }
   ]
 }
