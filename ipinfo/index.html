@@ -76,6 +76,28 @@
     justify-content: center;
     padding: 2rem;
   }
+  h1 {
+    color: var(--fg);
+    margin: 0 0 1.6rem;
+    font-weight: normal;
+    line-height: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.45rem;
+  }
+  .pixelTitle {
+    display: block;
+    width: min(100%, 19rem);
+    height: auto;
+    shape-rendering: crispEdges;
+  }
+  .pixelTitle .shade { fill: #4b4646; }
+  .pixelTitle .soft { fill: #b7b1b1; }
+  .pixelTitle .bright { fill: #f1ecec; }
+  h1 .cursor {
+    margin-bottom: 0.1em;
+    font-size: 1rem;
+  }
   #ip {
     font-size: clamp(1.6rem, 6vw, 3.25rem);
     letter-spacing: 0.05em;
@@ -293,6 +315,19 @@
 </head>
 <body>
 <main>
+  <h1 aria-label="ip info">
+    <svg class="pixelTitle" viewBox="-3 0 162 45" aria-hidden="true" focusable="false">
+      <g>
+        <path class="shade" transform="translate(-3 3)" d="M0 6H6V12H0V6ZM0 18H6V36H0V18ZM18 30H30V12H18V30ZM36 36H18V42H12V6H36V36ZM54 6H60V12H54V6ZM54 18H60V36H54V18ZM84 12H72V36H66V6H84V12ZM90 36H84V12H90V36ZM96 6H120V12H102V18H114V24H102V36H96V6ZM144 12H132V30H144V12ZM150 36H126V6H150V36Z"/>
+        <path class="soft" d="M0 6H6V12H0V6ZM0 18H6V36H0V18Z"/>
+        <path class="soft" d="M18 30H30V12H18V30ZM36 36H18V42H12V6H36V36Z"/>
+        <path class="bright" d="M54 6H60V12H54V6ZM54 18H60V36H54V18Z"/>
+        <path class="bright" d="M84 12H72V36H66V6H84V12ZM90 36H84V12H90V36Z"/>
+        <path class="bright" d="M96 6H120V12H102V18H114V24H102V36H96V6Z"/>
+        <path class="bright" d="M144 12H132V30H144V12ZM150 36H126V6H150V36Z"/>
+      </g>
+    </svg><span class="cursor" aria-hidden="true">█</span>
+  </h1>
   <div id="ip" title="click to copy"><span id="ipval"></span><span class="cursor">█</span></div>
   <div id="hint">tap ip to copy · tap <kbd id="detailsBtn">?</kbd> for details · <a href="/">home</a></div>
 </main>
