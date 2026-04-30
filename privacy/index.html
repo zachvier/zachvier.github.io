@@ -75,18 +75,6 @@
     align-items: flex-end;
     gap: 0.45rem;
   }
-  .pixelTitle {
-    display: block;
-    width: min(100%, 24rem);
-    height: auto;
-    shape-rendering: crispEdges;
-  }
-  .pixelTitle .shade { fill: #4b4646; }
-  .pixelTitle .soft { fill: #b7b1b1; }
-  .pixelTitle .bright { fill: #f1ecec; }
-  :root[data-theme="light"] .pixelTitle .shade { fill: #4b4646; }
-  :root[data-theme="light"] .pixelTitle .soft { fill: #b7b1b1; }
-  :root[data-theme="light"] .pixelTitle .bright { fill: #f1ecec; }
   h1 .cursor {
     display: inline-block;
     width: 0.55ch;
@@ -183,20 +171,7 @@
 </head>
 <body>
 <main>
-  <h1 aria-label="privacy">
-    <svg class="pixelTitle" viewBox="-3 0 192 45" aria-hidden="true" focusable="false">
-      <g>
-        <path class="shade" transform="translate(-3 3)" d="M6 30H18V12H6V30ZM24 36H6V42H0V6H24V36ZM30 6H54V12H36V36H30V6ZM48 12H54V18H48V12ZM60 6H66V12H60V6ZM60 18H66V36H60V18ZM72 6H78V24H84V30H90V6H96V30H90V36H78V30H72V6ZM105 6H123V36H99V18H117V12H105V6ZM105 24V30H117V24H105ZM153 12H135V30H153V36H129V6H153V12ZM159 6H165V24H177V6H183V42H159V36H177V30H159V6Z"/>
-        <path class="soft" d="M6 30H18V12H6V30ZM24 36H6V42H0V6H24V36Z"/>
-        <path class="soft" d="M30 6H54V12H36V36H30V6ZM48 12H54V18H48V12Z"/>
-        <path class="soft" d="M60 6H66V12H60V6ZM60 18H66V36H60V18Z"/>
-        <path class="soft" d="M72 6H78V24H84V30H90V6H96V30H90V36H78V30H72V6Z"/>
-        <path class="bright" d="M105 6H123V36H99V18H117V12H105V6ZM105 24V30H117V24H105Z"/>
-        <path class="bright" d="M153 12H135V30H153V36H129V6H153V12Z"/>
-        <path class="bright" d="M159 6H165V24H177V6H183V42H159V36H177V30H159V6Z"/>
-      </g>
-    </svg>
-  </h1>
+  <h1>privacy</h1>
   <div class="sub reveal">how this site handles your data · <a href="/">home</a></div>
 
   <h2 class="reveal">the short version</h2>

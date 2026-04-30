@@ -105,18 +105,6 @@
     align-items: flex-end;
     gap: 0.45rem;
   }
-  .pixelTitle {
-    display: block;
-    width: min(100%, 16rem);
-    height: auto;
-    shape-rendering: crispEdges;
-  }
-  .pixelTitle .shade { fill: #4b4646; }
-  .pixelTitle .soft { fill: #b7b1b1; }
-  .pixelTitle .bright { fill: #f1ecec; }
-  :root[data-theme="light"] .pixelTitle .shade { fill: #4b4646; }
-  :root[data-theme="light"] .pixelTitle .soft { fill: #b7b1b1; }
-  :root[data-theme="light"] .pixelTitle .bright { fill: #f1ecec; }
   .cursor {
     display: inline-block;
     width: 0.55ch;
@@ -432,18 +420,7 @@
 <main>
   <div id="statusShell">
     <section id="menuColumn" aria-label="stack navigation">
-      <h1 id="pageTitle" aria-label="stack">
-        <svg class="pixelTitle" viewBox="-3 0 153 42" aria-hidden="true" focusable="false">
-          <g>
-            <path class="shade" transform="translate(-3 3)" d="M0 6H24V12H6V18H24V36H0V30H18V24H0V6ZM36 0H42V6H54V12H42V30H54V36H36V12H30V6H36V0ZM66 6H84V36H60V18H78V12H66V6ZM66 24V30H78V24H66ZM114 12H96V30H114V36H90V6H114V12ZM120 6H126V18H132V12H138V6H144V12H138V18H132V24H138V30H144V36H138V30H132V24H126V36H120V6Z"/>
-            <path class="soft" d="M0 6H24V12H6V18H24V36H0V30H18V24H0V6Z"/>
-            <path class="soft" d="M36 0H42V6H54V12H42V30H54V36H36V12H30V6H36V0Z"/>
-            <path class="bright" d="M66 6H84V36H60V18H78V12H66V6ZM66 24V30H78V24H66Z"/>
-            <path class="bright" d="M114 12H96V30H114V36H90V6H114V12Z"/>
-            <path class="bright" d="M120 6H126V18H132V12H138V6H144V12H138V18H132V24H138V30H144V36H138V30H132V24H126V36H120V6Z"/>
-          </g>
-        </svg>
-      </h1>
+      <h1 id="pageTitle">stack</h1>
       <div class="sub">current signals &middot; <a href="/">home</a></div>
 
       <div class="statusList" id="statusList">
