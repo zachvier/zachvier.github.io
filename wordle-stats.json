@@ -1,56 +1,56 @@
 {
-  "updated": "2026-04-30",
+  "updated": "2026-05-01",
   "window_start": "2026-03-25",
-  "window_end": "2026-04-29",
-  "group_streak": 36,
+  "window_end": "2026-04-30",
+  "group_streak": 37,
   "players": [
     {
       "name": "Angela",
-      "streak": 12,
-      "avg": 3.15,
-      "games": 33
+      "streak": 13,
+      "avg": 3.18,
+      "games": 34
     },
     {
       "name": "Kevin",
-      "streak": 36,
-      "avg": 3.97,
-      "games": 36
+      "streak": 37,
+      "avg": 4.03,
+      "games": 37
     },
     {
       "name": "Michelle",
-      "streak": 9,
-      "avg": 2.89,
-      "games": 9
+      "streak": 10,
+      "avg": 3.0,
+      "games": 10
     },
     {
       "name": "Peachee",
-      "streak": 26,
-      "avg": 4.44,
-      "games": 27
+      "streak": 27,
+      "avg": 4.5,
+      "games": 28
     },
     {
       "name": "Victoria",
-      "streak": 30,
-      "avg": 4.25,
-      "games": 32
+      "streak": 31,
+      "avg": 4.24,
+      "games": 33
     },
     {
       "name": "WatTheOok",
-      "streak": 0,
-      "avg": 4.16,
-      "games": 25
+      "streak": 1,
+      "avg": 4.19,
+      "games": 26
     },
     {
       "name": "Winnie",
-      "streak": 28,
+      "streak": 29,
       "avg": 4.29,
-      "games": 34
+      "games": 35
     },
     {
       "name": "zeck",
-      "streak": 34,
-      "avg": 3.85,
-      "games": 34
+      "streak": 35,
+      "avg": 3.86,
+      "games": 35
     }
   ]
 }
