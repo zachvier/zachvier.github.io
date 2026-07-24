@@ -38,9 +38,16 @@
       .result[hidden] { display: none; }
       .result.is-visible { opacity: 1; transform: translateY(0); }
       .eyebrow { color: #7A7060; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
-      .result.loading .eyebrow::before { animation: pulse 1.25s ease-in-out infinite; background: #D5B675; border-radius: 50%; content: ''; display: inline-block; height: 7px; margin: 0 8px 1px 0; vertical-align: middle; width: 7px; }
+      .result.loading .eyebrow, .result.loading h2, .result.loading > p { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
       .result h2 { color: #EDE8DF; font-family: 'Fraunces', Georgia, serif; font-size: 27px; line-height: 1.25; margin: 5px 0 8px; }
       .result p { color: #A9A190; font-size: 15px; }
+      .scan-loading-card { align-items: center; background: #151512; border: 1px solid rgba(237, 232, 223, .055); border-radius: 999px; box-shadow: inset 0 0 48px rgba(255, 255, 255, .025), 0 18px 44px rgba(0, 0, 0, .18); color: #D8D2C4; display: none; gap: 30px; min-height: 110px; padding: 19px 54px 19px 28px; width: min(100%, 540px); }
+      .result.loading .scan-loading-card { display: inline-flex; }
+      .scan-loading-text { color: #D8D2C4; font-family: Arial, Helvetica, sans-serif; font-size: clamp(30px, 4vw, 39px); letter-spacing: .01em; line-height: 1; opacity: .86; }
+      .thinking-orb { flex: 0 0 auto; height: 76px; perspective: 500px; position: relative; width: 76px; }
+      .orb-cloud { animation: orb-spin 4.8s linear infinite; height: 100%; position: relative; transform-style: preserve-3d; width: 100%; }
+      .orb-dot { --dot-size: 3px; background: rgba(247, 244, 235, .92); border-radius: 50%; box-shadow: 0 0 8px rgba(255, 255, 255, .4); height: var(--dot-size); left: 50%; margin: calc(var(--dot-size) / -2) 0 0 calc(var(--dot-size) / -2); opacity: var(--alpha, .8); position: absolute; top: 50%; transform: rotateY(var(--longitude)) rotateX(var(--latitude)) translateZ(29px) scale(var(--scale, 1)); width: var(--dot-size); }
+      @keyframes orb-spin { to { transform: rotateY(360deg) rotateZ(360deg); } }
       .result.error h2 { color: #D38C7D; }
       .result.caution h2 { color: #D5B675; }
       .stats { display: grid; gap: 1px; grid-template-columns: repeat(2, 1fr); margin-top: 22px; overflow: hidden; }
@@ -74,8 +81,8 @@
         .scanner-workspace .result { grid-area: result; }
         .scanner-workspace:not(.is-scanning) .resources { border-top: 0; margin-top: 0; padding-top: 0; }
       }
-      @media (max-width: 520px) { main { padding: 64px 24px 96px; } .back { margin-bottom: 48px; } .url-row { flex-direction: column; } button { min-height: 47px; } .tool-links { grid-template-columns: 1fr; } }
-      @media (prefers-reduced-motion: reduce) { .result, .stat, .resources { transform: none; transition: none; } .result.loading .eyebrow::before { animation: none; } }
+      @media (max-width: 520px) { main { padding: 64px 24px 96px; } .back { margin-bottom: 48px; } .url-row { flex-direction: column; } button { min-height: 47px; } .tool-links { grid-template-columns: 1fr; } .scan-loading-card { gap: 18px; min-height: 88px; padding: 14px 30px 14px 18px; } .thinking-orb { height: 56px; width: 56px; } .orb-dot { --dot-size: 2.5px; transform: rotateY(var(--longitude)) rotateX(var(--latitude)) translateZ(22px) scale(var(--scale, 1)); } }
+      @media (prefers-reduced-motion: reduce) { .result, .stat, .resources { transform: none; transition: none; } .orb-cloud { animation: none; } }
       @media (prefers-reduced-motion: no-preference) { html.js-fade body { opacity: 0; } html.js-fade body.page-ready { opacity: 1; transition: opacity .45s ease; } html.js-fade body.page-leaving { opacity: 0; transition: opacity .3s ease; } }
     </style>
   </head>
@@ -101,6 +108,10 @@
           <p class="help">Only public HTTP and HTTPS links can be checked.</p>
         </form>
         <section id="result" class="result" aria-live="polite" hidden>
+          <div class="scan-loading-card" aria-hidden="true">
+            <div class="thinking-orb"><div id="orb-cloud" class="orb-cloud"></div></div>
+            <span class="scan-loading-text">Scanning….</span>
+          </div>
           <div id="result-eyebrow" class="eyebrow"></div>
           <h2 id="result-title"></h2>
           <p id="result-message"></p>
@@ -131,10 +142,35 @@
         var message = document.getElementById('result-message');
         var stats = document.getElementById('stats');
         var details = document.getElementById('details');
+        var orbCloud = document.getElementById('orb-cloud');
         var workspace = document.querySelector('.scanner-workspace');
         var resources = document.querySelector('.resources');
         var turnstileToken = '';
         var turnstileWidgetId = null;
+
+        function buildThinkingOrb() {
+          if (!orbCloud) return;
+          var dotCount = 118;
+          var goldenAngle = Math.PI * (3 - Math.sqrt(5));
+          var fragment = document.createDocumentFragment();
+          for (var index = 0; index < dotCount; index += 1) {
+            var y = 1 - (index / (dotCount - 1)) * 2;
+            var radius = Math.sqrt(1 - y * y);
+            var theta = goldenAngle * index;
+            var x = Math.cos(theta) * radius;
+            var z = Math.sin(theta) * radius;
+            var dot = document.createElement('span');
+            dot.className = 'orb-dot';
+            dot.style.setProperty('--longitude', Math.atan2(x, z) + 'rad');
+            dot.style.setProperty('--latitude', Math.asin(y) + 'rad');
+            dot.style.setProperty('--alpha', String(0.45 + ((index % 7) / 10)));
+            dot.style.setProperty('--scale', String(0.68 + ((index % 5) * 0.1)));
+            fragment.appendChild(dot);
+          }
+          orbCloud.appendChild(fragment);
+        }
+
+        buildThinkingOrb();
 
         window.onTurnstileLoad = function () {
           turnstileWidgetId = window.turnstile.render('#turnstile-widget', {
