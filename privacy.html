@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Privacy, risk, and responsible-use information for the local browser tools on zachvivier.com.">
+  <meta name="theme-color" content="#001219">
+  <title>Privacy & Usage — Zach Vivier</title>
+  <link rel="icon" type="image/png" href="assets/zv-logo.png">
+  <style>
+    :root {
+      --night:#001219;
+      --ocean:#005f73;
+      --teal:#0a9396;
+      --mint:#94d2bd;
+      --sand:#e9d8a6;
+      --amber:#ee9b00;
+      --muted:#9ab5ad;
+      --line:rgba(148,210,189,.2);
+      --max:900px;
+      color-scheme:dark;
+    }
+    * { box-sizing:border-box; }
+    body {
+      min-height:100vh;
+      margin:0;
+      background:var(--night);
+      color:var(--sand);
+      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+    a { color:inherit; }
+    :focus-visible { outline:2px solid var(--amber); outline-offset:4px; }
+    .site-header {
+      display:flex;
+      width:min(calc(100% - 48px),1180px);
+      margin:0 auto;
+      padding:28px 0;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom:1px solid var(--line);
+    }
+    .brand {
+      display:inline-flex;
+      align-items:center;
+      gap:11px;
+      color:var(--sand);
+      font-size:14px;
+      font-weight:760;
+      letter-spacing:.04em;
+      text-decoration:none;
+    }
+    .brand img { display:block; width:50px; height:auto; }
+    .back { color:var(--muted); font-size:13px; font-weight:650; text-decoration:none; }
+    .back:hover { color:var(--mint); }
+    main { width:min(calc(100% - 48px),var(--max)); margin:0 auto; padding:96px 0 110px; }
+    .eyebrow {
+      display:flex;
+      margin:0 0 22px;
+      align-items:center;
+      gap:12px;
+      color:var(--mint);
+      font:650 12px/1.2 "SFMono-Regular",Consolas,monospace;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .eyebrow::before { content:""; width:34px; height:2px; background:var(--amber); }
+    h1 {
+      max-width:800px;
+      margin:0;
+      color:#fff7df;
+      font-size:clamp(48px,7vw,80px);
+      font-weight:820;
+      letter-spacing:-.055em;
+      line-height:.96;
+    }
+    .lede { max-width:720px; margin:30px 0 64px; color:var(--muted); font-size:19px; line-height:1.65; }
+    .lede strong { color:var(--sand); }
+    .sections { border-top:1px solid var(--line); }
+    section { display:grid; grid-template-columns:190px 1fr; gap:42px; padding:32px 0; border-bottom:1px solid var(--line); }
+    h2 { margin:3px 0 0; color:var(--mint); font:700 12px/1.4 "SFMono-Regular",Consolas,monospace; letter-spacing:.1em; text-transform:uppercase; }
+    section div { color:var(--muted); font-size:15px; line-height:1.7; }
+    section p { margin:0; }
+    section p + p { margin-top:14px; }
+    section strong { color:var(--sand); }
+    footer {
+      display:flex;
+      width:min(calc(100% - 48px),1180px);
+      margin:0 auto;
+      padding:40px 0 48px;
+      align-items:center;
+      justify-content:space-between;
+      gap:24px;
+      border-top:1px solid var(--line);
+      color:#789b91;
+      font-size:12px;
+    }
+    footer nav { display:flex; flex-wrap:wrap; gap:22px; }
+    footer a { text-decoration:none; }
+    footer a:hover { color:var(--mint); }
+    @media (max-width:650px) {
+      .site-header,main,footer { width:calc(100% - 32px); }
+      .site-header { padding:20px 0; }
+      .brand { font-size:13px; }
+      .brand img { width:44px; }
+      main { padding:72px 0 82px; }
+      h1 { font-size:48px; }
+      .lede { margin-bottom:46px; font-size:17px; }
+      section { grid-template-columns:1fr; gap:12px; padding:26px 0; }
+      footer { align-items:flex-start; flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="Zach Vivier, home">
+      <img src="assets/zv-logo.png" alt="" width="973" height="537">
+      ZACH VIVIER
+    </a>
+    <a class="back" href="index.html">← Back home</a>
+  </header>
+
+  <main>
+    <p class="eyebrow">Privacy &amp; usage</p>
+    <h1>Local first.<br>Use with care.</h1>
+    <p class="lede">These tools are free, privacy-oriented, and designed to process files <strong>inside your browser</strong>. That reduces exposure, but it does not eliminate every risk.</p>
+
+    <div class="sections">
+      <section>
+        <h2>What stays local</h2>
+        <div>
+          <p>Files opened in a tool are processed by code running on your device. The tools do not intentionally upload file contents, require an account, or send analytics.</p>
+          <p>Your browser and the site’s hosting provider may still receive ordinary page requests. Following an external link takes you outside this site.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Sensitive data</h2>
+        <div>
+          <p>Diagnostic files can contain passwords, tokens, cookies, personal information, internal addresses, and proprietary data. <strong>Review everything before sharing or exporting it.</strong> Masking and parsing features may not identify every secret or interpret every file correctly.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Responsible use</h2>
+        <div>
+          <p>Only inspect data and systems you are authorized to access. Keep original files, verify important conclusions independently, and do not treat tool output as security, legal, or professional advice.</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>No warranty</h2>
+        <div>
+          <p>The site and tools are provided <strong>“as is” and without warranties</strong>. To the fullest extent permitted by law, the author assumes no responsibility or liability for data loss, exposure, inaccurate results, service interruption, or other consequences arising from their use.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <span>© Zach Vivier</span>
+    <nav aria-label="Footer navigation">
+      <a href="index.html">Home</a>
+      <a href="https://github.com/zachvivier/zachvivier.github.io" target="_blank" rel="noopener noreferrer">Source</a>
+      <a href="mailto:site@zachvivier.com">Email</a>
+    </nav>
+  </footer>
+</body>
+</html>
