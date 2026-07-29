@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NsjrTkhhRN9bbLEcxXHOJBcyIauqv+3PlGGkPb8vMrA=' 'sha256-uRUgRYbpMRdySjdSlWhM64DMrDVn0yCWwYZOmtBv9NU='; script-src-attr 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Event Log Viewer — .evtx reader</title>
 <style>
@@ -736,7 +737,7 @@ const EVTX = (function () {
   var brush = null; // {from,to}
   var fileUid = 0;
 
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function lvlClass(r) { var l = r.level; return l === '1' ? 'crit' : l === '2' ? 'err' : l === '3' ? 'warn' : l === '5' ? 'verb' : 'info'; }
   function lvlName(r) { var c = lvlClass(r); return { crit: 'Critical', err: 'Error', warn: 'Warning', verb: 'Verbose', info: 'Information' }[c]; }
   function lvlRank(r) { return { crit: 0, err: 1, warn: 2, info: 3, verb: 4 }[lvlClass(r)]; }

@@ -169,8 +169,11 @@ http://localhost:8000/
 
 ## Tests
 
-Automated tests currently cover the Mail Header Analyzer. The HAR Viewer and
-Event Log Viewer do not yet have automated test coverage.
+Automated tests cover the Mail Header Analyzer, CSP and escaping policy across
+all three tools, and an adversarial HAR rendering check in a real browser. The
+browser check runs when Chrome or Chromium and a Node runtime with global
+WebSocket support are available; otherwise it is skipped. The HAR and EVTX
+parsers do not yet have broad functional test coverage.
 
 Run the suite from the repository root using Node's built-in test runner:
 

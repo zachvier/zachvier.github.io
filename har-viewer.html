@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-QNyGkVm+tICIhuEklU7ea0JqWLF1K/2wZ1fu+3NYBCY='; script-src-attr 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HAR Viewer — network capture reader</title>
 <style>
@@ -367,7 +368,7 @@
   var SECRET = /^(authorization|proxy-authorization|cookie|set-cookie|sid|x-api-key|x-apikey|x-auth-token|x-access-token|x-amz-security-token|x-faro-session-id|x-csrf-token|x-xsrf-token|access-token|refresh-token|id-token|bearer)$/i;
   var SECRET_PARAM = /(token|secret|password|passwd|apikey|api_key|auth|sig|signature|sid)/i;
 
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function bare(n) { return String(n == null ? '' : n).replace(/^:/, ''); }
   function isSecret(n) { return SECRET.test(bare(n)); }
   function methodClass(method) { return String(method || '').toLowerCase().replace(/[^a-z0-9_-]/g, ''); }
