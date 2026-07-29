@@ -55,12 +55,8 @@
   :focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
 
   /* ---------- upload ---------- */
-  #upload { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:32px 20px; overflow:auto; }
-  .mark { flex:0 0 auto; display:flex; align-items:center; gap:12px; margin-top:auto; margin-bottom:40px; }
-  .mark-bar { width:5px; height:38px; background:var(--accent); border-radius:3px; }
-  .mark-t { font-size:19px; font-weight:800; letter-spacing:-0.3px; line-height:1.1; }
-  .mark-t span { display:block; font-size:10.5px; font-weight:600; color:var(--text-muted); letter-spacing:1.6px; text-transform:uppercase; margin-top:3px; }
-  .card { flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:44px 48px; width:100%; max-width:600px; margin-bottom:auto; position:relative; overflow:hidden; box-shadow:var(--shadow); }
+  #upload { display:flex; flex-direction:column; align-items:center; justify-content:safe center; height:100vh; padding:32px 20px; overflow:auto; }
+  .card { flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:44px 48px; width:100%; max-width:600px; margin:0; position:relative; overflow:hidden; box-shadow:var(--shadow); }
   .card::before { content:''; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg,var(--accent),var(--blue)); }
   .card h1 { font-size:23px; font-weight:800; letter-spacing:-0.4px; margin-bottom:8px; }
   .card .lede { color:var(--text-muted); line-height:1.6; margin-bottom:30px; }
@@ -247,7 +243,6 @@
 <div id="upload">
   <a class="home-link" href="index.html">← zachvivier.com</a>
   <button class="theme-fab" data-theme-toggle>Light</button>
-  <div class="mark"><div class="mark-bar"></div><div class="mark-t">HAR Viewer<span>HTTP Archive · runs locally</span></div></div>
   <div class="card">
     <h1>Open a network capture</h1>
     <p class="lede">Reads <code>.har</code> files entirely in this page. Nothing is uploaded, and no network calls or developer tools are needed to inspect a saved capture.</p>
