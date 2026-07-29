@@ -177,15 +177,27 @@
       transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
     }
     a.tool-card:hover { transform:translateY(-4px); border-color:var(--mint); box-shadow:0 18px 45px rgba(0,18,25,.32); }
-    .tool-card::after { content:""; position:absolute; right:-82px; bottom:-104px; width:230px; height:230px; border:42px solid rgba(10,147,150,.2); border-radius:50%; }
+    .card-art {
+      position:absolute;
+      right:14px;
+      bottom:-8px;
+      width:100px;
+      height:100px;
+      color:var(--mint);
+      opacity:.18;
+      pointer-events:none;
+      transition:opacity .2s ease,transform .2s ease;
+    }
+    .card-art svg { display:block; width:100%; height:100%; }
+    a.tool-card:hover .card-art { opacity:.25; transform:translateY(-3px); }
 
-    .card-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .card-top { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .number { color:var(--mint); font:700 12px/1 "SFMono-Regular",Consolas,monospace; letter-spacing:.08em; }
     .badge { padding:6px 9px; border-radius:999px; background:var(--teal); color:var(--night); font:700 10px/1 "SFMono-Regular",Consolas,monospace; letter-spacing:.08em; text-transform:uppercase; }
     .badge.beta { background:var(--amber); }
-    .tool-card h3 { max-width:450px; margin:auto 0 16px; font-size:clamp(34px,4vw,54px); letter-spacing:-.045em; line-height:.95; }
+    .tool-card h3 { position:relative; z-index:1; max-width:450px; margin:auto 0 16px; font-size:clamp(34px,4vw,54px); letter-spacing:-.045em; line-height:.95; }
     .tool-card p { z-index:1; max-width:520px; margin:0; color:var(--mint); font-size:15px; line-height:1.62; }
-    .tool-link { display:flex; z-index:1; margin-top:30px; align-items:center; gap:9px; color:var(--sand); font-size:13px; font-weight:780; }
+    .tool-link { display:flex; z-index:1; max-width:calc(100% - 96px); margin-top:30px; align-items:center; gap:9px; color:var(--sand); font-size:13px; font-weight:780; }
 
 
 
@@ -281,6 +293,11 @@
             <h3>HAR Viewer</h3>
             <p>Open HTTP Archive captures, inspect requests and responses, filter timelines, mask credentials, and export focused results—all on your device.</p>
             <span class="tool-link">Launch the viewer <span class="arrow" aria-hidden="true">↗</span></span>
+            <span class="card-art" aria-hidden="true">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M42 31 12 60l30 29M78 31l30 29-30 29M69 17 51 103" stroke="currentColor" stroke-width="10" stroke-linecap="square" stroke-linejoin="miter"/>
+              </svg>
+            </span>
           </a>
 
           <a class="tool-card" href="event-viewer.html">
@@ -288,6 +305,13 @@
             <h3>Event Log Viewer</h3>
             <p>Open Windows <code>.evtx</code> files, filter events and timelines, inspect raw XML, mask sensitive fields, and export focused results—all on your device.</p>
             <span class="tool-link">Launch the viewer <span class="arrow" aria-hidden="true">↗</span></span>
+            <span class="card-art" aria-hidden="true">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 13h76a8 8 0 0 1 8 8v86H14V21a8 8 0 0 1 8-8Z" stroke="currentColor" stroke-width="9"/>
+                <path d="M38 13v18h44V13M60 49l22 8v16c0 14-9 25-22 31-13-6-22-17-22-31V57l22-8Z" fill="currentColor"/>
+                <path d="m50 73 7 7 14-17" stroke="var(--night)" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
+              </svg>
+            </span>
           </a>
 
           <a class="tool-card" href="mail-analyzer.html">
@@ -295,6 +319,13 @@
             <h3>Mail Header Analyzer</h3>
             <p>Check raw messages for malformed headers, MIME and encoding problems, authentication claims, and suspicious Received-hop timing—all on your device.</p>
             <span class="tool-link">Analyze a message <span class="arrow" aria-hidden="true">↗</span></span>
+            <span class="card-art" aria-hidden="true">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="48" cy="48" r="35" stroke="currentColor" stroke-width="10"/>
+                <path d="m74 74 34 34" stroke="currentColor" stroke-width="12" stroke-linecap="square"/>
+                <path d="M94 69c2 9 9 16 18 18-9 2-16 9-18 18-2-9-9-16-18-18 9-2 16-9 18-18Z" fill="currentColor"/>
+              </svg>
+            </span>
           </a>
         </div>
       </div>
