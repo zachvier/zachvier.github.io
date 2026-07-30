@@ -1,0 +1,9 @@
+From: first@example.com
+From: second@example.com
+To: receiver@example.net
+Date: Wed, 29 Jul 2026 10:00:00 +0000
+Message-ID: <first@example.com>
+Message-ID: <second@example.com>
+Subject: Duplicate singleton fixture
+
+body

@@ -31,6 +31,30 @@ test('mail analyzer page exposes local file and paste workflows with report regi
   assert.doesNotMatch(html, /innerHTML\s*=/);
 });
 
+test('mail analyzer page renders evidence-rich auth, transport, MIME, and trust-boundary details without a verdict', () => {
+  const html = fs.readFileSync(path.join(root, 'mail-analyzer.html'), 'utf8');
+  assert.match(html, /id="trustedHop"/);
+  assert.match(html, /First controlled hop/i);
+  assert.match(html, /OBSERVED, NOT VERIFIED/);
+  assert.match(html, /No DNS/);
+  assert.match(html, /No crypto/);
+  assert.match(html, /Trust boundary/);
+  assert.match(html, /Analysis complete/);
+  assert.doesNotMatch(html, /Problems found|Review recommended|No structural problems/);
+  assert.match(html, /f\.evidence/);
+  assert.match(html, /f\.trustNote/);
+  assert.match(html, /authentication\.signatures/);
+  assert.match(html, /authentication\.records/);
+  assert.match(html, /signature identity not matched/);
+  assert.match(html, /authentication\.spfDetails/);
+  assert.match(html, /h\.origin/);
+  assert.match(html, /h\.tls/);
+  assert.match(html, /timing\.totalSeconds/);
+  assert.match(html, /node\.disposition/);
+  assert.match(html, /node\.filename/);
+  assert.match(html, /origin not stated/);
+});
+
 test('homepage links the mail analyzer as an available third utility', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /href="mail-analyzer\.html"/);

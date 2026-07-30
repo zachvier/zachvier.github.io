@@ -210,6 +210,7 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
   const adversarialHar = path.join(root, 'tests', 'fixtures', 'adversarial.har');
   assert.ok(fs.existsSync(adversarialHar), 'adversarial HAR fixture must exist');
   const mailFixture = path.join(root, 'tests', 'fixtures', 'good-multipart.eml');
+  const complexMailFixture = path.join(root, 'tests', 'fixtures', 'complex-multihop-header-sample.eml');
   const server = await startServer();
   let browser;
 
@@ -250,9 +251,50 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
     assert.deepEqual(outbound, [], `HAR viewer made unexpected requests: ${outbound.join(', ')}`);
 
     const mailSession = await createPage(browser.client);
+    const mailRequestStart = browser.client.events.length;
     await navigate(browser.client, mailSession, `${origin}/mail-analyzer.html`);
     await setFile(browser.client, mailSession, '#file', mailFixture);
     await waitFor(() => evaluate(browser.client, mailSession, "document.querySelector('#report').classList.contains('visible') && document.querySelectorAll('#summary .summary-card').length === 5"), 'mail analyzer did not run under CSP');
+
+    await setFile(browser.client, mailSession, '#file', complexMailFixture);
+    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelector('#headerCount').textContent.includes('60 FIELDS') && document.querySelectorAll('#hops .hop').length === 8"), 'mail analyzer did not render the complex fixture');
+    const complexProjection = await evaluate(browser.client, mailSession, `(() => ({
+      routes: Array.from(document.querySelectorAll('#hops .hop-route')).map(node => node.textContent),
+      timing: document.querySelector('#timingSummary').textContent,
+      auth: document.querySelector('#auth').textContent,
+      mime: document.querySelector('#mimeTree').textContent,
+      findings: document.querySelector('#findings').textContent
+    }))()`);
+    assert.match(complexProjection.routes[0], /origin not stated/);
+    assert.match(complexProjection.routes[1], /origin not stated/);
+    assert.match(complexProjection.routes[6], /198\.51\.100\.203/);
+    assert.match(complexProjection.timing, /53s total/);
+    assert.match(complexProjection.auth, /d=northwind-labs\.example.*s=selector1/i);
+    assert.match(complexProjection.auth, /neutral.*gateway\.corp-relay\.example\.net/i);
+    assert.match(complexProjection.mime, /disposition attachment.*filename q3-action-items\.txt/i);
+    assert.match(complexProjection.findings, /Received trace does not connect at hop 8/);
+    assert.match(complexProjection.findings, /Plaintext SMTP reported at hop 8/);
+
+    await evaluate(browser.client, mailSession, "const select=document.querySelector('#trustedHop');select.value='3';select.dispatchEvent(new Event('change',{bubbles:true}));true");
+    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelectorAll('#hops .hop.untrusted').length === 5 && document.querySelectorAll('#findings .trust-note').length >= 5"), 'trust boundary did not label hops and findings');
+
+    const unmatchedDkimMessage = [
+      'Authentication-Results: mx.example; dkim=fail header.i=@unmatched.example header.b=missing123',
+      'From: sender@example.org',
+      'To: receiver@example.net',
+      'Date: Wed, 29 Jul 2026 10:00:00 +0000',
+      'Message-ID: <unmatched-dkim@example.org>',
+      '',
+      'body'
+    ].join('\r\n');
+    await evaluate(browser.client, mailSession, `(() => { const raw=document.querySelector('#raw');raw.value=${JSON.stringify(unmatchedDkimMessage)};raw.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#analyzeBtn').click();return true })()`);
+    await waitFor(() => evaluate(browser.client, mailSession, "/signature identity not matched/i.test(document.querySelector('#auth').textContent) && /dkim.*fail/i.test(document.querySelector('#auth').textContent)"), 'unmatched reported DKIM claim was not rendered');
+
+    const mailOutbound = browser.client.events.slice(mailRequestStart)
+      .filter(event => event.sessionId === mailSession && event.method === 'Network.requestWillBeSent')
+      .map(event => event.params.request.url)
+      .filter(url => !url.startsWith(origin) && !url.startsWith('data:'));
+    assert.deepEqual(mailOutbound, [], `mail analyzer made unexpected requests: ${mailOutbound.join(', ')}`);
 
     const evtxSession = await createPage(browser.client);
     await navigate(browser.client, evtxSession, `${origin}/event-viewer.html`);

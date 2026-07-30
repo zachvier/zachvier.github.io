@@ -1,0 +1,12 @@
+Authentication-Results: mx.example; dkim=pass header.i=@sender.example header.s=s1 header.b=abc12345; spf=pass smtp.mailfrom=sender@sender.example; dmarc=pass header.from=victim.example
+DKIM-Signature: v=1; a=rsa-sha256; d=sender.example; s=s1; h=from:date:message-id; bh=abc; b=abc12345def
+Return-Path: <sender@sender.example>
+Sender: sender@sender.example
+From: Victim <author@victim.example>
+Reply-To: sender@sender.example
+To: receiver@example.net
+Date: Wed, 29 Jul 2026 10:00:00 +0000
+Message-ID: <forged-dmarc@victim.example>
+Subject: Contradictory DMARC claim fixture
+
+body

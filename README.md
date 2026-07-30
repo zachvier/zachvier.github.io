@@ -88,16 +88,25 @@ messages; the report is marked when this occurs.
 **Capabilities:**
 
 - Check header syntax, required and duplicate fields, physical line limits, and
-  encoded words.
-- Inspect MIME boundaries, nesting, part counts, and Base64 or
-  quoted-printable encoding.
-- Build a MIME structure tree.
-- Parse `Received` routes, timestamps, and protocols; flag missing `by` clauses,
-  unparseable timestamps, and chronology inversions greater than five minutes.
-- Surface SPF, DKIM, DMARC, and ARC results recorded in
-  `Authentication-Results`, and count `ARC-Seal` and
-  `ARC-Authentication-Results` fields. Results inside
-  `ARC-Authentication-Results` are not parsed.
+  RFC 2047 encoded words.
+- Build a MIME structure tree; inspect boundaries, nesting, part counts,
+  dispositions, attachment filenames, and Base64 or quoted-printable encoding.
+- Parse `Received` routes into claimed and receiver-observed endpoints, protocol,
+  TLS details, timestamps, and per-hop timing.
+- Identify disconnected adjacent hops, chronology inversions, plaintext SMTP,
+  failed TLS verification claims, HELO or address disagreements, recipient
+  changes, and special-use IP address ranges. Localhost and loopback
+  reinjection are treated separately from external continuity.
+- Let you designate a trusted receiver and label lower hops and related findings
+  as unverifiable by construction.
+- Surface SPF, DKIM, DMARC, ARC, and `Received-SPF` results recorded in message
+  headers, including repeated or disagreeing claims and unmatched DKIM results.
+- Compare message-local Return-Path, Sender, From, Reply-To, SPF, and DKIM
+  identities. DMARC alignment is derived only when the available local evidence
+  is sufficient; organizational-domain cases that require unavailable public
+  suffix data remain indeterminate.
+- Present severity, evidence, and context for individual observations without
+  issuing an overall safe, malicious, phishing, or spoofing verdict.
 
 This tool is **beta**. Parsing may be wrong or incomplete. Feedback is welcome
 at [site@zachvivier.com](mailto:site@zachvivier.com?subject=Mail%20Header%20Analyzer%20feedback).
@@ -109,7 +118,7 @@ Authentication output contains **observed claims, not independent verification**
   verified.
 - **Trust boundary:** `Received` and authentication fields below a trusted
   receiver can be forged. The analyzer does not determine where that boundary
-  is; you must identify the receiver you trust.
+  is; you must designate the receiver you trust, or leave the boundary unset.
 
 A favorable `Authentication-Results` header proves only that a system wrote
 that result into the message. The analyzer does not determine whether a message

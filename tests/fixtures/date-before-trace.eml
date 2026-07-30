@@ -1,0 +1,8 @@
+Received: from sender.example by mx.example with ESMTPS; Wed, 29 Jul 2026 10:00:00 +0000
+From: sender@example
+To: receiver@example.net
+Date: Mon, 1 Jun 2026 10:00:00 +0000
+Message-ID: <old-date@example>
+Subject: Old Date fixture
+
+body
