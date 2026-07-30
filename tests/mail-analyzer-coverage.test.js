@@ -128,7 +128,7 @@ test('complex trace exposes transport, peer-address, HELO, recipient, and aggreg
   assert.match(addressMismatch.detail, /RFC 1918/i);
   assert.match(addressMismatch.detail, /X-Originating-IP/i);
 
-  assert.deepEqual(hop8.tls, { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP' });
+  assert.deepEqual(hop8.tls, { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP', absenceReason: 'external-smtp-no-tls-evidence' });
   assert.equal(one(report, 'plaintext-smtp').context.hop, 8);
   assert.equal(one(report, 'helo-hostname-mismatch').context.hop, 8);
 
@@ -196,6 +196,32 @@ test('complex fixture cross-checks identities, reported DKIM verdicts, Received-
   assert.match(verdictConflict.detail, /do(?:es)? not establish why/i);
   assert.match(verdictConflict.detail, /header changes.*DNS\/key.*verifier behavior.*malformed\/truncated claims/i);
   assert.doesNotMatch(verdictConflict.detail, /malicious|proves? that|indicate that signed body/i);
+  assert.doesNotMatch(verdictConflict.detail, /does,, but/i);
+  assert.equal(verdictConflict.severity, 'info');
+
+  const authTransition = one(report, 'authentication-instance-transition');
+  assert.equal(authTransition.severity, 'info');
+  assert.equal(authTransition.context.fromInstance, 1);
+  assert.equal(authTransition.context.toInstance, 2);
+  assert.equal(authTransition.context.fromDmarc, 'pass');
+  assert.equal(authTransition.context.toDmarc, 'fail');
+  assert.match(authTransition.detail, /dmarc=pass.*dmarc=fail/i);
+  assert.match(authTransition.detail, /smtp\.mailfrom.*j\.moreau@northwind-labs\.example/i);
+  assert.match(authTransition.detail, /dev-announce-bounces\+dev-alerts=example-corp\.com@lists\.dev-community\.example\.org/i);
+  assert.match(authTransition.detail, /mailing-list/i);
+
+  const dmarcClaims = report.authentication.records.filter(record => record.method === 'dmarc');
+  assert.deepEqual(dmarcClaims.map(record => ({ result: record.result, evaluator: record.evaluator, arcInstance: record.arcInstance })), [
+    { result: 'fail', evaluator: 'gateway.corp-relay.example.net', arcInstance: 2 },
+    { result: 'fail', evaluator: 'mx.google.com', arcInstance: null },
+    { result: 'pass', evaluator: 'lists.dev-community.example.org', arcInstance: 1 }
+  ]);
+
+  const arcClaims = report.authentication.records.filter(record => record.method === 'arc');
+  assert.deepEqual(arcClaims.map(record => ({ result: record.result, evaluator: record.evaluator, arcInstance: record.arcInstance, parenthetical: record.parenthetical })), [
+    { result: 'pass', evaluator: 'gateway.corp-relay.example.net', arcInstance: 2, parenthetical: 'i=1 spf=pass dkim=pass dmarc=pass' },
+    { result: 'pass', evaluator: 'mx.google.com', arcInstance: null, parenthetical: 'i=2 spf=pass dkim=pass dmarc=pass' }
+  ]);
 
   assert.deepEqual(report.authentication.receivedSpf.map(r => ({ result: r.result, evaluator: r.evaluator, domain: r.domain, clientIp: r.clientIp })), [
     { result: 'pass', evaluator: 'google.com', domain: 'lists.dev-community.example.org', clientIp: '203.0.113.47' },
@@ -209,6 +235,7 @@ test('complex fixture cross-checks identities, reported DKIM verdicts, Received-
   assert.equal(alignment.severity, 'info');
   assert.equal(alignment.context.derived, 'fail');
   assert.equal(alignment.context.reported, 'fail');
+  assert.equal(Object.hasOwn(alignment.context, 'coverageComplete'), false);
   assert.match(alignment.detail, /strict alignment was not evaluated/i);
   assert.match(alignment.detail, /no aligned passing identifier/i);
 
@@ -410,6 +437,54 @@ test('derived DMARC remains informational when relaxed organizational alignment 
     assert.ok(report.findings.some(finding => finding.code === 'dmarc-alignment-indeterminate' && finding.severity === 'info'));
     assert.ok(!report.findings.some(finding => finding.code === 'dmarc-claim-contradiction'));
   });
+});
+
+test('complex fixture gives the trace-break evidence both the literal from claim and observed peer, and normalized timestamp instants', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file' });
+  const discontinuity = one(report, 'received-chain-discontinuity');
+  assert.equal(discontinuity.context.newerFrom, '[10.14.7.203]');
+  assert.equal(discontinuity.context.comparedRepresentation, 'literal from token');
+  assert.equal(discontinuity.context.newerObservedPeer, '198.51.100.203');
+  assert.equal(Object.hasOwn(discontinuity.context, 'newerFromRaw'), false);
+  assert.equal(Object.hasOwn(discontinuity.context, 'comparedValue'), false);
+  assert.equal(Object.hasOwn(discontinuity.context, 'newerOrigin'), false);
+  assert.match(discontinuity.detail, /literal from token/i);
+  assert.match(discontinuity.detail, /observed peer 198\.51\.100\.203/i);
+
+  const inversion = one(report, 'received-time-inversion');
+  assert.match(inversion.detail, /normalized instant/i);
+  assert.match(inversion.detail, /16:19:55 \+0000/i);
+  assert.match(inversion.detail, /2026-07-21T16:13:29\.000Z/i);
+  assert.match(inversion.detail, /18:13:29 \+0200/i);
+  assert.equal(inversion.context.newerNormalized, '2026-07-21T16:13:29.000Z');
+  assert.equal(inversion.context.olderNormalized, '2026-07-21T16:19:55.000Z');
+});
+
+test('complex fixture distinguishes by-only TLS absence from external SMTP without TLS evidence', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file' });
+  assert.equal(report.hops[0].tls.absenceReason, 'by-only');
+  assert.equal(report.hops[7].tls.absenceReason, 'external-smtp-no-tls-evidence');
+});
+
+test('received address mismatch consistently labels receiver-reported rDNS', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file' });
+  const mismatch = one(report, 'received-address-mismatch');
+  assert.match(mismatch.detail, /receiver-reported rDNS is unknown/i);
+  assert.equal(mismatch.context.receiverReportedRdns, 'unknown');
+  assert.equal(Object.hasOwn(mismatch.context, 'rdns'), false);
+});
+
+test('DKIM structured tags strip interior whitespace while unfolded display evidence retains it', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file' });
+  const dkimHeader = report.headers.fields.find(header => header.lower === 'dkim-signature');
+  assert.match(dkimHeader.value, /Q1aFy U0iOe2Hj/);
+  assert.ok(!/\s/.test(report.authentication.signatures[0].b));
+});
+
+test('non-list DKIM verdict divergence is a warning', () => {
+  const report = analyzeMessage(fixtureNamed('dkim-divergence-non-list.eml'), { inputSource: 'file' });
+  const conflict = one(report, 'dkim-verdict-conflict');
+  assert.equal(conflict.severity, 'warning');
 });
 
 

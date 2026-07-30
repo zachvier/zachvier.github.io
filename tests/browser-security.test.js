@@ -254,12 +254,14 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
     const mailRequestStart = browser.client.events.length;
     await navigate(browser.client, mailSession, `${origin}/mail-analyzer.html`);
     await setFile(browser.client, mailSession, '#file', mailFixture);
-    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelector('#report').classList.contains('visible') && document.querySelectorAll('#summary .summary-card').length === 5"), 'mail analyzer did not run under CSP');
+    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelector('#report').classList.contains('visible') && document.querySelectorAll('#summary .summary-card').length === 6"), 'mail analyzer did not run under CSP');
 
     await setFile(browser.client, mailSession, '#file', complexMailFixture);
     await waitFor(() => evaluate(browser.client, mailSession, "document.querySelector('#headerCount').textContent.includes('60 FIELDS') && document.querySelectorAll('#hops .hop').length === 8"), 'mail analyzer did not render the complex fixture');
     const complexProjection = await evaluate(browser.client, mailSession, `(() => ({
       routes: Array.from(document.querySelectorAll('#hops .hop-route')).map(node => node.textContent),
+      hopMeta: Array.from(document.querySelectorAll('#hops .hop')).map(node => node.textContent),
+      summary: document.querySelector('#summary').textContent,
       timing: document.querySelector('#timingSummary').textContent,
       auth: document.querySelector('#auth').textContent,
       mime: document.querySelector('#mimeTree').textContent,
@@ -268,10 +270,24 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
     assert.match(complexProjection.routes[0], /origin not stated/);
     assert.match(complexProjection.routes[1], /origin not stated/);
     assert.match(complexProjection.routes[6], /198\.51\.100\.203/);
+    assert.match(complexProjection.summary, /Informational7/);
+    assert.doesNotMatch(complexProjection.hopMeta[2], /receiver-reported rDNS/);
+    assert.doesNotMatch(complexProjection.hopMeta[3], /receiver-reported rDNS/);
+    assert.doesNotMatch(complexProjection.hopMeta[4], /receiver-reported rDNS/);
+    assert.doesNotMatch(complexProjection.hopMeta[5], /receiver-reported rDNS/);
+    assert.match(complexProjection.hopMeta[6], /receiver-reported rDNS unknown/);
+    assert.match(complexProjection.hopMeta[0], /by-only delivery; no peer transport is stated/);
+    assert.match(complexProjection.hopMeta[7], /external SMTP with no TLS clause or cipher stated/);
     assert.match(complexProjection.timing, /53s total/);
     assert.match(complexProjection.auth, /d=northwind-labs\.example.*s=selector1/i);
     assert.match(complexProjection.auth, /neutral.*gateway\.corp-relay\.example\.net/i);
+    assert.match(complexProjection.auth, /ARC i=2.*gateway\.corp-relay\.example\.net.*fail/i);
+    assert.match(complexProjection.auth, /mx\.google\.com.*fail/i);
+    assert.match(complexProjection.auth, /ARC i=1.*lists\.dev-community\.example\.org.*pass/i);
+    assert.match(complexProjection.auth, /parenthetical: i=1 spf=pass dkim=pass dmarc=pass/i);
+    assert.match(complexProjection.auth, /parenthetical: i=2 spf=pass dkim=pass dmarc=pass/i);
     assert.match(complexProjection.mime, /disposition attachment.*filename q3-action-items\.txt/i);
+    assert.match(complexProjection.findings, /Reported authentication identity and DMARC result change between ARC instances/);
     assert.match(complexProjection.findings, /Received trace does not connect at hop 8/);
     assert.match(complexProjection.findings, /Plaintext SMTP reported at hop 8/);
 

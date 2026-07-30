@@ -48,6 +48,13 @@ test('mail analyzer page renders evidence-rich auth, transport, MIME, and trust-
   assert.match(html, /signature identity not matched/);
   assert.match(html, /authentication\.spfDetails/);
   assert.match(html, /h\.origin/);
+  assert.match(html, /receiver-reported rDNS/);
+  assert.match(html, /r\.summary\.info/);
+  assert.match(html, /record\.method==='dmarc'/);
+  assert.match(html, /record\.method==='arc'/);
+  assert.match(html, /record\.parenthetical/);
+  assert.doesNotMatch(html, /coverageComplete/);
+  assert.match(html, /tls\.absenceReason/);
   assert.match(html, /h\.tls/);
   assert.match(html, /timing\.totalSeconds/);
   assert.match(html, /node\.disposition/);

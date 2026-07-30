@@ -309,6 +309,11 @@
     return out.replace(/[ \t]+/g, ' ').trim();
   }
 
+  function firstCommentText(value) {
+    var match = /\(([^()]*)\)/.exec(String(value || ''));
+    return match ? match[1].replace(/\s+/g, ' ').trim() : '';
+  }
+
   function parseRfcDate(value) {
     var text = stripComments(value);
     var re = /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s*,\s*)?(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{2,4})\s+(\d{2}):(\d{2})(?::(\d{2}))?\s+([+-]\d{4}|UT|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT)$/i;
@@ -420,11 +425,11 @@
     match = /\bcipher(?:=|\s+)([A-Za-z0-9_-]+)/i.exec(text); if (match) cipher = match[1];
     match = /\bbits=([0-9/]+)/i.exec(text) || /\(([0-9/]+)\s+bits\)/i.exec(text); if (match) bits = match[1];
     match = /\bverify=([A-Za-z]+)/i.exec(text); if (match) verify = match[1].toUpperCase();
-    if (/Google Transport Security/i.test(text)) return { status: 'tls', version: version, cipher: cipher, bits: bits, verify: verify || 'not-stated', label: 'Google Transport Security' };
-    if (version || cipher || /\b(?:ESMTPSA?|SMTPS)\b/i.test(hop.with || '')) return { status: 'tls', version: version, cipher: cipher, bits: bits, verify: verify || 'not-stated', label: 'TLS' };
-    if (isLoopbackHost(hop.from)) return { status: 'local', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Local re-injection' };
-    if (/^SMTP$/i.test(hop.with || '') && hop.from) return { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP' };
-    return { status: 'not-stated', version: '', cipher: '', bits: '', verify: 'not-stated', label: 'TLS not stated' };
+    if (/Google Transport Security/i.test(text)) return { status: 'tls', version: version, cipher: cipher, bits: bits, verify: verify || 'not-stated', label: 'Google Transport Security', absenceReason: '' };
+    if (version || cipher || /\b(?:ESMTPSA?|SMTPS)\b/i.test(hop.with || '')) return { status: 'tls', version: version, cipher: cipher, bits: bits, verify: verify || 'not-stated', label: 'TLS', absenceReason: '' };
+    if (isLoopbackHost(hop.from)) return { status: 'local', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Local re-injection', absenceReason: '' };
+    if (/^SMTP$/i.test(hop.with || '') && hop.from) return { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP', absenceReason: 'external-smtp-no-tls-evidence' };
+    return { status: 'not-stated', version: '', cipher: '', bits: '', verify: 'not-stated', label: 'TLS not stated', absenceReason: 'by-only' };
   }
 
   function parseHops(received, findings, options, state, messageContext) {
@@ -450,13 +455,14 @@
       if (hop.claimedHostname && hop.helo && normalizeTraceHost(hop.claimedHostname) !== normalizeTraceHost(hop.helo)) findings.push(finding('warning', 'helo-hostname-mismatch', 'HELO differs from claimed hostname at hop ' + hop.index, 'Hop ' + hop.index + ' claims hostname ' + hop.claimedHostname + ' but announces HELO ' + hop.helo + '.', null, { hop: hop.index, claimedHostname: hop.claimedHostname, helo: hop.helo }));
       if (hop.assertedAddress && hop.observedAddress && normalizeTraceHost(hop.assertedAddress) !== normalizeTraceHost(hop.observedAddress)) {
         var assertedClass = classifySpecialAddress(hop.assertedAddress), xNote = hop.xOriginatingIpMatch ? ' X-Originating-IP ' + xOriginating + ' matches the observed peer.' : (xOriginating ? ' X-Originating-IP ' + xOriginating + ' does not match the observed peer.' : '');
-        findings.push(finding('warning', 'received-address-mismatch', 'Client-asserted and observed addresses differ at hop ' + hop.index, 'Hop ' + hop.index + ' has client-asserted literal ' + hop.assertedAddress + ' but the receiving MTA recorded peer ' + hop.observedAddress + '; rDNS is ' + (hop.rdns || '(not stated)') + '. The asserted literal is ' + (assertedClass || 'not in a classified special-use range') + '.' + xNote, null, { hop: hop.index, assertedAddress: hop.assertedAddress, observedAddress: hop.observedAddress, rdns: hop.rdns, assertedClass: assertedClass, xOriginatingIp: xOriginating || '', xOriginatingIpMatch: hop.xOriginatingIpMatch }));
+        findings.push(finding('warning', 'received-address-mismatch', 'Client-asserted and observed addresses differ at hop ' + hop.index, 'Hop ' + hop.index + ' has client-asserted literal ' + hop.assertedAddress + ' but the receiving MTA recorded peer ' + hop.observedAddress + '; receiver-reported rDNS is ' + (hop.rdns || '(not stated)') + '. The asserted literal is ' + (assertedClass || 'not in a classified special-use range') + '.' + xNote, null, { hop: hop.index, assertedAddress: hop.assertedAddress, observedAddress: hop.observedAddress, receiverReportedRdns: hop.rdns, assertedClass: assertedClass, xOriginatingIp: xOriginating || '', xOriginatingIpMatch: hop.xOriginatingIpMatch }));
       }
       return hop;
     });
     for (var i = 0; i + 1 < hops.length; i++) {
       if (hops[i].timestamp !== null && hops[i + 1].timestamp !== null && hops[i + 1].timestamp - hops[i].timestamp > 300000) {
-        findings.push(finding('warning', 'received-time-inversion', 'Received timestamps run backward', 'Hop ' + (i + 2) + ' claims ' + hops[i + 1].date + ', more than five minutes later than hop ' + (i + 1) + ' at ' + hops[i].date + '. Clock skew or a forged trace field is possible.', null, { newerHop: i + 1, olderHop: i + 2, newerTime: hops[i].date, olderTime: hops[i + 1].date }));
+        var newerNormalized = new Date(hops[i].timestamp).toISOString(), olderNormalized = new Date(hops[i + 1].timestamp).toISOString();
+        findings.push(finding('warning', 'received-time-inversion', 'Received timestamps run backward', 'Hop ' + (i + 2) + ' claims ' + hops[i + 1].date + ' (normalized instant ' + olderNormalized + '), more than five minutes later than hop ' + (i + 1) + ' at ' + hops[i].date + ' (normalized instant ' + newerNormalized + '). Clock skew or a forged trace field is possible.', null, { newerHop: i + 1, olderHop: i + 2, newerTime: hops[i].date, olderTime: hops[i + 1].date, newerNormalized: newerNormalized, olderNormalized: olderNormalized }));
       }
     }
     for (var hi = 0; hi + 1 < hops.length; hi++) {
@@ -470,7 +476,7 @@
         inversion.context.correlatedChainBreak = true;
         inversion.detail += ' The same hop also breaks trace continuity, which favors a forged prepend over ordinary clock skew.';
       }
-      findings.push(finding('error', 'received-chain-discontinuity', 'Received trace does not connect at hop ' + older.index, 'Hop ' + older.index + ' claims receiver ' + older.by + ', but the next trace field (hop ' + newer.index + ') identifies its origin as ' + newer.from + ' and was received by ' + (newer.by || '(receiver not stated)') + '. The isolated receiver does not connect to the adjacent trace.', null, { hop: older.index, olderBy: older.by, newerHop: newer.index, newerFrom: newer.from, newerBy: newer.by, correlatedTimestampInversion: !!inversion }));
+      findings.push(finding('error', 'received-chain-discontinuity', 'Received trace does not connect at hop ' + older.index, 'Hop ' + older.index + ' claims receiver ' + older.by + ', but the next trace field (hop ' + newer.index + ') has literal from token ' + newer.from + ' (the value compared for continuity) and receiver-observed peer ' + (newer.observedAddress || '(not stated)') + '; it was received by ' + (newer.by || '(receiver not stated)') + '. The isolated receiver does not connect to the adjacent trace.', null, { hop: older.index, olderBy: older.by, newerHop: newer.index, newerFrom: newer.from, comparedRepresentation: 'literal from token', newerObservedPeer: newer.observedAddress, newerBy: newer.by, correlatedTimestampInversion: !!inversion }));
     }
     for (var ri = 0; ri + 1 < hops.length; ri++) {
       var newerRecipient = hops[ri].for, olderRecipient = hops[ri + 1].for;
@@ -629,10 +635,11 @@
         var clean = stripComments(clause), methodMatch = /^([a-z][a-z0-9_-]*)\s*=\s*([a-z][a-z0-9_-]*)\b/i.exec(clean);
         if (!methodMatch) return;
         var method = methodMatch[1].toLowerCase(), result = methodMatch[2].toLowerCase(), props = authProperties(clause);
-        var record = { method: method, result: result, evaluator: evaluator, source: header.lower === 'authentication-results' ? 'Authentication-Results' : 'ARC-Authentication-Results', arcInstance: arcInstance, sealer: arcInstance === null ? '' : (sealers[String(arcInstance)] || ''), fieldOrder: fieldOrder, line: header.line, properties: props };
+        var record = { method: method, result: result, evaluator: evaluator, source: header.lower === 'authentication-results' ? 'Authentication-Results' : 'ARC-Authentication-Results', arcInstance: arcInstance, sealer: arcInstance === null ? '' : (sealers[String(arcInstance)] || ''), fieldOrder: fieldOrder, line: header.line, properties: props, parenthetical: method === 'arc' ? firstCommentText(clause) : '' };
         record.headerB = (props['header.b'] || '').replace(/\s/g, '');
         record.headerDomain = domainFromMailbox(props['header.i'] || props['header.d'] || '');
-        record.mailFromDomain = domainFromMailbox(props['smtp.mailfrom'] || '');
+        record.mailFrom = props['smtp.mailfrom'] || '';
+        record.mailFromDomain = domainFromMailbox(record.mailFrom);
         records.push(record);
         if (header.lower === 'authentication-results' && Object.prototype.hasOwnProperty.call(observed, method)) observed[method].push(result);
       });
@@ -650,6 +657,8 @@
       }
     });
 
+    var listIndicators = !!((map['list-id'] || []).length || (map.precedence || []).some(function (value) { return /\blist\b/i.test(value); }));
+    var divergenceSeverity = listIndicators ? 'info' : 'warning';
     var bySignature = {};
     records.filter(function (record) { return record.method === 'dkim' && record.headerB; }).forEach(function (record) { (bySignature[record.headerB] || (bySignature[record.headerB] = [])).push(record); });
     Object.keys(bySignature).forEach(function (headerB) {
@@ -657,8 +666,15 @@
       group.forEach(function (record) { if (results.indexOf(record.result) < 0) results.push(record.result); });
       if (results.length < 2) return;
       var reports = group.map(function (record) { return record.arcInstance === null ? record.evaluator + ' reports ' + record.result : 'ARC i=' + record.arcInstance + ' sealed by ' + (record.sealer || '(not stated)') + ' reports ' + record.result; });
-      findings.push(finding('info', 'dkim-verdict-conflict', 'The same reported DKIM signature has different verdicts', 'header.b=' + headerB + ': ' + reports.join('; ') + '. The message’s own reports are consistent with signed body/content having changed between these evaluation points, as mailing-list footer insertion commonly does, but they do not establish why any verifier returned fail. Header changes, DNS/key state, verifier behavior, and malformed/truncated claims are also consistent explanations.', null, { field: 'Authentication-Results / ARC-Authentication-Results', headerB: headerB, reports: group.map(function (record) { return { result: record.result, evaluator: record.evaluator, arcInstance: record.arcInstance, sealer: record.sealer }; }) }));
+      findings.push(finding(divergenceSeverity, 'dkim-verdict-conflict', 'The same reported DKIM signature has different verdicts', 'header.b=' + headerB + ': ' + reports.join('; ') + '. The message’s own reports are consistent with signed body/content having changed between these evaluation points' + (listIndicators ? ', as mailing-list footer insertion commonly does' : '') + ', but they do not establish why any verifier returned fail. Header changes, DNS/key state, verifier behavior, and malformed/truncated claims are also consistent explanations.', null, { field: 'Authentication-Results / ARC-Authentication-Results', headerB: headerB, listIndicators: listIndicators, reports: group.map(function (record) { return { result: record.result, evaluator: record.evaluator, arcInstance: record.arcInstance, sealer: record.sealer }; }) }));
     });
+
+    var arcOne = records.filter(function (record) { return record.arcInstance === 1; }), arcTwo = records.filter(function (record) { return record.arcInstance === 2; });
+    var dmarcOne = arcOne.filter(function (record) { return record.method === 'dmarc'; })[0], dmarcTwo = arcTwo.filter(function (record) { return record.method === 'dmarc'; })[0];
+    var spfOne = arcOne.filter(function (record) { return record.method === 'spf'; })[0], spfTwo = arcTwo.filter(function (record) { return record.method === 'spf'; })[0];
+    if (dmarcOne && dmarcTwo && spfOne && spfTwo && (dmarcOne.result !== dmarcTwo.result || spfOne.mailFrom !== spfTwo.mailFrom)) {
+      findings.push(finding(divergenceSeverity, 'authentication-instance-transition', 'Reported authentication identity and DMARC result change between ARC instances', 'Between ARC i=1 at ' + dmarcOne.evaluator + ' and ARC i=2 at ' + dmarcTwo.evaluator + ', dmarc=' + dmarcOne.result + ' changes to dmarc=' + dmarcTwo.result + ' for From domain ' + identities.from + '. SPF remains ' + spfOne.result + ', but smtp.mailfrom changes from ' + (spfOne.mailFrom || '(not stated)') + ' to ' + (spfTwo.mailFrom || '(not stated)') + '. This locates the reported alignment break at the mailing-list transition; it is an observed report transition, not DNS or cryptographic verification.', null, { fromInstance: 1, toInstance: 2, fromEvaluator: dmarcOne.evaluator, toEvaluator: dmarcTwo.evaluator, fromDmarc: dmarcOne.result, toDmarc: dmarcTwo.result, fromSpf: spfOne.result, toSpf: spfTwo.result, fromMailFrom: spfOne.mailFrom, toMailFrom: spfTwo.mailFrom, fromDomain: identities.from, listIndicators: listIndicators }));
+    }
 
     var receivedSpf = parseReceivedSpf(headers), spfResults = [];
     receivedSpf.forEach(function (entry) { if (spfResults.indexOf(entry.result) < 0) spfResults.push(entry.result); });
@@ -687,7 +703,7 @@
       });
       var coverageComplete = spfCovered && dkimCovered;
       var derived = alignedSpf || alignedDkim ? 'pass' : (!coverageComplete || states.indexOf(null) >= 0 ? 'indeterminate' : 'fail');
-      var item = { evaluator: dmarc.evaluator, fromDomain: identities.from, derived: derived, reported: dmarc.result, relaxed: true, strictEvaluated: false, alignedSpf: alignedSpf, alignedDkim: alignedDkim, authenticationCoverageComplete: coverageComplete };
+      var item = { evaluator: dmarc.evaluator, fromDomain: identities.from, derived: derived, reported: dmarc.result, relaxed: true, strictEvaluated: false, alignedSpf: alignedSpf, alignedDkim: alignedDkim };
       dmarcAlignment.push(item);
       var noIdentifier = derived === 'fail' ? 'No aligned passing identifier exists' : derived === 'pass' ? 'At least one aligned passing identifier exists' : 'Authentication method coverage or organizational-domain data is insufficient to derive alignment safely';
       if (derived === 'indeterminate') findings.push(finding('info', 'dmarc-alignment-indeterminate', 'DMARC alignment is not locally derivable with certainty', dmarc.evaluator + ' reports dmarc=' + dmarc.result + ' for From domain ' + identities.from + '. ' + noIdentifier + '; strict alignment was not evaluated.', null, item));
