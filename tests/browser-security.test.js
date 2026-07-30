@@ -267,17 +267,17 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
       mime: document.querySelector('#mimeTree').textContent,
       findings: document.querySelector('#findings').textContent
     }))()`);
-    assert.match(complexProjection.routes[0], /origin not stated/);
-    assert.match(complexProjection.routes[1], /origin not stated/);
-    assert.match(complexProjection.routes[6], /198\.51\.100\.203/);
+    assert.match(complexProjection.routes[0], /198\.18\.7\.11/);
+    assert.match(complexProjection.routes[7], /origin not stated/);
+    assert.match(complexProjection.routes[1], /198\.51\.100\.203/);
     assert.match(complexProjection.summary, /Informational7/);
     assert.doesNotMatch(complexProjection.hopMeta[2], /receiver-reported rDNS/);
     assert.doesNotMatch(complexProjection.hopMeta[3], /receiver-reported rDNS/);
     assert.doesNotMatch(complexProjection.hopMeta[4], /receiver-reported rDNS/);
     assert.doesNotMatch(complexProjection.hopMeta[5], /receiver-reported rDNS/);
-    assert.match(complexProjection.hopMeta[6], /receiver-reported rDNS unknown/);
-    assert.match(complexProjection.hopMeta[0], /by-only delivery; no peer transport is stated/);
-    assert.match(complexProjection.hopMeta[7], /external SMTP with no TLS clause or cipher stated/);
+    assert.match(complexProjection.hopMeta[1], /receiver-reported rDNS unknown/);
+    assert.match(complexProjection.hopMeta[7], /by-only delivery; no peer transport is stated/);
+    assert.match(complexProjection.hopMeta[0], /external SMTP with no TLS clause or cipher stated/);
     assert.match(complexProjection.timing, /53s total/);
     assert.match(complexProjection.auth, /d=northwind-labs\.example.*s=selector1/i);
     assert.match(complexProjection.auth, /neutral.*gateway\.corp-relay\.example\.net/i);
@@ -288,11 +288,11 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
     assert.match(complexProjection.auth, /parenthetical: i=2 spf=pass dkim=pass dmarc=pass/i);
     assert.match(complexProjection.mime, /disposition attachment.*filename q3-action-items\.txt/i);
     assert.match(complexProjection.findings, /Reported authentication identity and DMARC result change between ARC instances/);
-    assert.match(complexProjection.findings, /Received trace does not connect at hop 8/);
-    assert.match(complexProjection.findings, /Plaintext SMTP reported at hop 8/);
+    assert.match(complexProjection.findings, /Received trace does not connect at hop 1/);
+    assert.match(complexProjection.findings, /Plaintext SMTP reported at hop 1/);
 
     await evaluate(browser.client, mailSession, "const select=document.querySelector('#trustedHop');select.value='3';select.dispatchEvent(new Event('change',{bubbles:true}));true");
-    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelectorAll('#hops .hop.untrusted').length === 5 && document.querySelectorAll('#findings .trust-note').length >= 5"), 'trust boundary did not label hops and findings');
+    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelectorAll('#hops .hop.untrusted').length === 2 && document.querySelectorAll('#findings .trust-note').length >= 4"), 'trust boundary did not label hops and findings');
 
     const unmatchedDkimMessage = [
       'Authentication-Results: mx.example; dkim=fail header.i=@unmatched.example header.b=missing123',

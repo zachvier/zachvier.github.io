@@ -93,7 +93,7 @@ test('invalid Received dates do not participate in chronology checks', () => {
     'Received: from a by b; Tue, 31 Feb 2026 10:00:00 +0000',
     'Received: from c by a; Wed, 29 Jul 2026 11:00:00 +0000'
   ]));
-  assert.equal(report.hops[0].timestamp, null);
+  assert.equal(report.hops[1].timestamp, null);
   assert.ok(has(report, 'received-date-unparseable'));
   assert.ok(!has(report, 'received-time-inversion'));
 });

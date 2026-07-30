@@ -411,7 +411,10 @@
     addresses.forEach(function (address) { if (!observedAddress && normalizeTraceHost(address) !== normalizeTraceHost(assertedAddress)) observedAddress = address; });
     if (!observedAddress && !assertedAddress && addresses.length) observedAddress = addresses[0];
     var comment = /\(([^()]*?)\[([^\]]+)\][^()]*\)/.exec(clause), rdns = '';
-    if (comment) rdns = comment[1].replace(/\[[^\]]+\]/g, '').trim().replace(/\.$/, '');
+    if (comment) {
+      rdns = comment[1].replace(/\[[^\]]+\]/g, '').trim().replace(/\.$/, '');
+      if (!observedAddress) observedAddress = comment[2];
+    }
     if (!rdns && /\(unknown\b/i.test(clause)) rdns = 'unknown';
     var heloMatch = /(?:\bhelo\s*=\s*|\bHELO\s+)([^\s)]+)/i.exec(clause);
     var claimedHostname = assertedAddress || isIpv4(normalizeTraceHost(fromToken)) || normalizeTraceHost(fromToken).indexOf(':') >= 0 ? '' : String(fromToken || '').replace(/\.$/, '');
@@ -429,7 +432,9 @@
     if (version || cipher || /\b(?:ESMTPSA?|SMTPS)\b/i.test(hop.with || '')) return { status: 'tls', version: version, cipher: cipher, bits: bits, verify: verify || 'not-stated', label: 'TLS', absenceReason: '' };
     if (isLoopbackHost(hop.from)) return { status: 'local', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Local re-injection', absenceReason: '' };
     if (/^SMTP$/i.test(hop.with || '') && hop.from) return { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP', absenceReason: 'external-smtp-no-tls-evidence' };
-    return { status: 'not-stated', version: '', cipher: '', bits: '', verify: 'not-stated', label: 'TLS not stated', absenceReason: 'by-only' };
+    if (!hop.from) return { status: 'not-stated', version: '', cipher: '', bits: '', verify: 'not-stated', label: 'TLS not stated', absenceReason: 'by-only' };
+    if (/^REST$/i.test(hop.with || '')) return { status: 'not-stated', version: '', cipher: '', bits: '', verify: 'not-stated', label: 'TLS not stated', absenceReason: 'api-injection-no-tls-clause' };
+    return { status: 'not-stated', version: '', cipher: '', bits: '', verify: 'not-stated', label: 'TLS not stated', absenceReason: 'from-present-no-tls-clause' };
   }
 
   function parseHops(received, findings, options, state, messageContext) {
@@ -438,6 +443,7 @@
       findings.push(finding('error', 'received-hop-limit', 'Received hop limit reached', 'Only the newest trace fields were parsed to protect this browser tab.', null, { count: source.length, limit: options.maxHops }));
       source = source.slice(0, options.maxHops); state.truncated = true;
     }
+    source = source.slice().reverse();
     var hops = source.map(function (value, index) {
       var dateText = traceDate(value), parsed = dateText ? parseRfcDate(dateText) : null, ms = parsed ? parsed.timestamp : null;
       var hop = { index: index + 1, from: token(value, 'from'), by: token(value, 'by'), with: token(value, 'with'), id: token(value, 'id'), for: token(value, 'for'), date: dateText, timestamp: ms, raw: value };
@@ -459,29 +465,35 @@
       }
       return hop;
     });
+    if (hops.length) {
+      hops[0].positionLabel = 'claimed origin';
+      hops[hops.length - 1].positionLabel = 'final delivery';
+    }
     for (var i = 0; i + 1 < hops.length; i++) {
-      if (hops[i].timestamp !== null && hops[i + 1].timestamp !== null && hops[i + 1].timestamp - hops[i].timestamp > 300000) {
-        var newerNormalized = new Date(hops[i].timestamp).toISOString(), olderNormalized = new Date(hops[i + 1].timestamp).toISOString();
-        findings.push(finding('warning', 'received-time-inversion', 'Received timestamps run backward', 'Hop ' + (i + 2) + ' claims ' + hops[i + 1].date + ' (normalized instant ' + olderNormalized + '), more than five minutes later than hop ' + (i + 1) + ' at ' + hops[i].date + ' (normalized instant ' + newerNormalized + '). Clock skew or a forged trace field is possible.', null, { newerHop: i + 1, olderHop: i + 2, newerTime: hops[i].date, olderTime: hops[i + 1].date, newerNormalized: newerNormalized, olderNormalized: olderNormalized }));
+      if (hops[i].timestamp !== null && hops[i + 1].timestamp !== null && hops[i].timestamp - hops[i + 1].timestamp > 300000) {
+        var priorNormalized = new Date(hops[i].timestamp).toISOString(), nextNormalized = new Date(hops[i + 1].timestamp).toISOString();
+        findings.push(finding('warning', 'received-time-inversion', 'Received timestamps run backward', 'Hop ' + hops[i].index + ' claims ' + hops[i].date + ' (normalized instant ' + priorNormalized + '), more than five minutes later than hop ' + hops[i + 1].index + ' at ' + hops[i + 1].date + ' (normalized instant ' + nextNormalized + '). Clock skew or a forged trace field is possible.', null, { priorTraceHop: hops[i].index, nextTraceHop: hops[i + 1].index, priorTraceTime: hops[i].date, nextTraceTime: hops[i + 1].date, priorTraceNormalized: priorNormalized, nextTraceNormalized: nextNormalized }));
       }
     }
     for (var hi = 0; hi + 1 < hops.length; hi++) {
-      var newer = hops[hi], older = hops[hi + 1];
-      if (!newer.from || !older.by) continue;
-      if (traceEndpointsMatch(newer, older)) continue;
-      if (isLoopbackHost(newer.from) && normalizeTraceHost(newer.by) === normalizeTraceHost(older.by)) continue;
-      var inversion = findings.filter(function (item) { return item.code === 'received-time-inversion' && item.context.olderHop === older.index; })[0];
+      var prior = hops[hi], next = hops[hi + 1];
+      if (!next.from || !prior.by) continue;
+      if (traceEndpointsMatch(next, prior)) continue;
+      if (isLoopbackHost(next.from) && normalizeTraceHost(next.by) === normalizeTraceHost(prior.by)) continue;
+      var inversion = findings.filter(function (item) { return item.code === 'received-time-inversion' && item.context.priorTraceHop === prior.index; })[0];
       if (inversion) {
         inversion.severity = 'error';
         inversion.context.correlatedChainBreak = true;
         inversion.detail += ' The same hop also breaks trace continuity, which favors a forged prepend over ordinary clock skew.';
       }
-      findings.push(finding('error', 'received-chain-discontinuity', 'Received trace does not connect at hop ' + older.index, 'Hop ' + older.index + ' claims receiver ' + older.by + ', but the next trace field (hop ' + newer.index + ') has literal from token ' + newer.from + ' (the value compared for continuity) and receiver-observed peer ' + (newer.observedAddress || '(not stated)') + '; it was received by ' + (newer.by || '(receiver not stated)') + '. The isolated receiver does not connect to the adjacent trace.', null, { hop: older.index, olderBy: older.by, newerHop: newer.index, newerFrom: newer.from, comparedRepresentation: 'literal from token', newerObservedPeer: newer.observedAddress, newerBy: newer.by, correlatedTimestampInversion: !!inversion }));
+      var detail = 'Hop ' + prior.index + ' claims receiver ' + prior.by + ', but the next trace field (hop ' + next.index + ') has literal from token ' + next.from + ' (the value compared for continuity) and receiver-observed peer ' + (next.observedAddress || '(not stated)') + '; it was received by ' + (next.by || '(receiver not stated)') + '. The isolated receiver does not connect to the adjacent trace.';
+      if (!inversion) detail += ' A missing intermediate trace field is common at API-injection and pool-relay boundaries, and this gap alone does not indicate forgery.';
+      findings.push(finding(inversion ? 'error' : 'warning', 'received-chain-discontinuity', 'Received trace does not connect at hop ' + prior.index, detail, null, { hop: prior.index, priorTraceBy: prior.by, nextTraceHop: next.index, nextTraceFrom: next.from, comparedRepresentation: 'literal from token', nextTraceObservedPeer: next.observedAddress, nextTraceBy: next.by, correlatedTimestampInversion: !!inversion }));
     }
     for (var ri = 0; ri + 1 < hops.length; ri++) {
-      var newerRecipient = hops[ri].for, olderRecipient = hops[ri + 1].for;
-      if (newerRecipient && olderRecipient && newerRecipient.toLowerCase() !== olderRecipient.toLowerCase()) {
-        findings.push(finding('info', 'envelope-recipient-change', 'Envelope recipient changes between hops ' + hops[ri + 1].index + ' and ' + hops[ri].index, 'Hop ' + hops[ri + 1].index + ' names ' + olderRecipient + ', while hop ' + hops[ri].index + ' names ' + newerRecipient + '. Alias expansion or forwarding commonly causes this and the trace alone does not imply interception.', null, { hops: [hops[ri + 1].index, hops[ri].index], olderRecipient: olderRecipient, newerRecipient: newerRecipient }));
+      var priorRecipient = hops[ri].for, nextRecipient = hops[ri + 1].for;
+      if (priorRecipient && nextRecipient && priorRecipient.toLowerCase() !== nextRecipient.toLowerCase()) {
+        findings.push(finding('info', 'envelope-recipient-change', 'Envelope recipient changes between hops ' + hops[ri].index + ' and ' + hops[ri + 1].index, 'Hop ' + hops[ri].index + ' names ' + priorRecipient + ', while hop ' + hops[ri + 1].index + ' names ' + nextRecipient + '. Alias expansion or forwarding commonly causes this and the trace alone does not imply interception.', null, { hops: [hops[ri].index, hops[ri + 1].index], priorTraceRecipient: priorRecipient, nextTraceRecipient: nextRecipient }));
       }
     }
     var specialEntries = [];
@@ -506,10 +518,10 @@
     var consecutive = [], largest = null, totalSeconds = 0;
     for (var i = 0; i + 1 < hops.length; i++) {
       if (hops[i].timestamp === null || hops[i + 1].timestamp === null) continue;
-      var seconds = Math.round((hops[i].timestamp - hops[i + 1].timestamp) / 1000);
+      var seconds = Math.round((hops[i + 1].timestamp - hops[i].timestamp) / 1000);
       if (seconds < 0) continue;
-      var delta = { fromHop: hops[i + 1].index, toHop: hops[i].index, seconds: seconds };
-      hops[i].deltaFromOlderSeconds = seconds;
+      var delta = { fromHop: hops[i].index, toHop: hops[i + 1].index, seconds: seconds };
+      hops[i + 1].deltaFromPreviousSeconds = seconds;
       consecutive.push(delta); totalSeconds += seconds;
       if (!largest || seconds > largest.seconds) largest = delta;
     }
@@ -518,18 +530,19 @@
 
   function applyTrustBoundary(hops, findings, requestedHop) {
     var trustedHop = Number(requestedHop), designated = Number.isInteger(trustedHop) && trustedHop >= 1 && trustedHop <= hops.length;
-    hops.forEach(function (hop) { hop.trust = designated && hop.index <= trustedHop ? 'controlled-side' : designated ? 'untrusted' : 'undesignated'; });
-    if (!designated) return { designated: false, trustedHop: null, untrustedFromHop: null };
+    hops.forEach(function (hop) { hop.trust = designated && hop.index >= trustedHop ? 'controlled-side' : designated ? 'untrusted' : 'undesignated'; });
+    if (!designated) return { designated: false, trustedHop: null, attackerControllableThroughHop: null };
     findings.forEach(function (item) {
       var cited = [];
       if (item.context && Number.isInteger(Number(item.context.hop))) cited.push(Number(item.context.hop));
       if (item.context && Array.isArray(item.context.hops)) cited = cited.concat(item.context.hops.map(Number));
-      if (item.context && Number.isInteger(Number(item.context.olderHop))) cited.push(Number(item.context.olderHop));
-      if (!cited.some(function (hopNo) { return hopNo > trustedHop; })) return;
+      if (item.context && Number.isInteger(Number(item.context.priorTraceHop))) cited.push(Number(item.context.priorTraceHop));
+      if (item.context && Number.isInteger(Number(item.context.nextTraceHop))) cited.push(Number(item.context.nextTraceHop));
+      if (!cited.some(function (hopNo) { return hopNo < trustedHop; })) return;
       item.unverifiable = true;
-      item.trustNote = 'Evidence at hop ' + cited.filter(function (hopNo) { return hopNo > trustedHop; }).filter(function (hopNo, pos, all) { return all.indexOf(hopNo) === pos; }).join(', ') + ' is below the designated trust boundary and is attacker-controllable, so it is unverifiable by construction.';
+      item.trustNote = 'Evidence at hop ' + cited.filter(function (hopNo) { return hopNo < trustedHop; }).filter(function (hopNo, pos, all) { return all.indexOf(hopNo) === pos; }).join(', ') + ' is before designated hop ' + trustedHop + ' and is attacker-controllable, so it is unverifiable by construction.';
     });
-    return { designated: true, trustedHop: trustedHop, untrustedFromHop: trustedHop + 1 };
+    return { designated: true, trustedHop: trustedHop, attackerControllableThroughHop: trustedHop - 1 };
   }
 
   function splitAuthClauses(value) {

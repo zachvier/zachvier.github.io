@@ -29,22 +29,22 @@ test('complex reference fixture retains the verified parser baseline', () => {
   assert.equal(report.mime.totalParts, 6);
   assert.equal(report.mime.maxDepth, 2);
   assert.equal(report.headers.subjectDecoded, '[dev-announce] Résumé: Q3 infra review ✅ 完了');
-  assert.equal(report.hops[0].from, '');
-  assert.equal(report.hops[1].from, '');
+  assert.equal(report.hops[0].from, 'mail.internal-crm.example.biz');
+  assert.equal(report.hops[7].from, '');
 });
 
-test('complex trace identifies only the planted hop 8 continuity break and correlates its timestamp inversion', () => {
+test('complex trace identifies only the planted hop 1 continuity break and correlates its timestamp inversion', () => {
   const report = analyzeMessage(fixture, { inputSource: 'file' });
   const breaks = findings(report, 'received-chain-discontinuity');
   assert.equal(breaks.length, 1);
   assert.equal(breaks[0].severity, 'error');
-  assert.equal(breaks[0].context.hop, 8);
+  assert.equal(breaks[0].context.hop, 1);
   assert.match(breaks[0].detail, /smtp-relay\.unrelated-host\.example\.net/i);
   assert.match(breaks[0].detail, /smtp-out-03\.mailsend\.example\.com/i);
   assert.equal(breaks[0].context.correlatedTimestampInversion, true);
 
   const inversion = one(report, 'received-time-inversion');
-  assert.equal(inversion.context.olderHop, 8);
+  assert.equal(inversion.context.priorTraceHop, 1);
   assert.equal(inversion.context.correlatedChainBreak, true);
   assert.match(inversion.detail, /forged prepend/i);
 
@@ -54,16 +54,16 @@ test('complex trace identifies only the planted hop 8 continuity break and corre
       .map(finding => ({ code: finding.code, hop: finding.context.hop }))
       .sort((a, b) => a.hop - b.hop || a.code.localeCompare(b.code)),
     [
-      { code: 'tls-verification-failed', hop: 4 },
-      { code: 'received-address-mismatch', hop: 7 },
-      { code: 'helo-hostname-mismatch', hop: 8 },
-      { code: 'plaintext-smtp', hop: 8 },
-      { code: 'received-chain-discontinuity', hop: 8 }
+      { code: 'received-chain-discontinuity', hop: 1 },
+      { code: 'helo-hostname-mismatch', hop: 1 },
+      { code: 'plaintext-smtp', hop: 1 },
+      { code: 'received-address-mismatch', hop: 2 },
+      { code: 'tls-verification-failed', hop: 5 }
     ].sort((a, b) => a.hop - b.hop || a.code.localeCompare(b.code))
   );
 
-  assert.ok(!breaks.some(f => f.context.hop === 5), 'loopback re-injection must be exempt');
-  assert.ok(!breaks.some(f => f.context.hop === 1 || f.context.hop === 2), 'by-only hops must be skipped');
+  assert.ok(!breaks.some(f => f.context.hop === 4), 'loopback re-injection must be exempt');
+  assert.ok(!breaks.some(f => f.context.hop === 7 || f.context.hop === 8), 'by-only hops must be skipped');
 });
 
 test('trace continuity accepts an observed peer literal matching the adjacent receiver', () => {
@@ -110,45 +110,45 @@ test('trace continuity does not treat an unknown rDNS sentinel as an endpoint', 
 
 test('complex trace exposes transport, peer-address, HELO, recipient, and aggregate special-use evidence', () => {
   const report = analyzeMessage(fixture, { inputSource: 'file' });
-  const hop7 = report.hops[6];
-  const hop8 = report.hops[7];
-  assert.equal(hop7.origin, '198.51.100.203');
-  assert.equal(hop7.observedAddress, '198.51.100.203');
-  assert.equal(hop7.assertedAddress, '10.14.7.203');
-  assert.equal(hop7.rdns, 'unknown');
-  assert.equal(hop7.helo, 'DESKTOP-8KQ2M1');
-  assert.equal(hop7.xOriginatingIpMatch, true);
+  const hop2 = report.hops[1];
+  const hop1 = report.hops[0];
+  assert.equal(hop2.origin, '198.51.100.203');
+  assert.equal(hop2.observedAddress, '198.51.100.203');
+  assert.equal(hop2.assertedAddress, '10.14.7.203');
+  assert.equal(hop2.rdns, 'unknown');
+  assert.equal(hop2.helo, 'DESKTOP-8KQ2M1');
+  assert.equal(hop2.xOriginatingIpMatch, true);
 
   const addressMismatch = one(report, 'received-address-mismatch');
   assert.equal(addressMismatch.severity, 'warning');
-  assert.equal(addressMismatch.context.hop, 7);
+  assert.equal(addressMismatch.context.hop, 2);
   assert.match(addressMismatch.detail, /10\.14\.7\.203/);
   assert.match(addressMismatch.detail, /198\.51\.100\.203/);
   assert.match(addressMismatch.detail, /unknown/i);
   assert.match(addressMismatch.detail, /RFC 1918/i);
   assert.match(addressMismatch.detail, /X-Originating-IP/i);
 
-  assert.deepEqual(hop8.tls, { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP', absenceReason: 'external-smtp-no-tls-evidence' });
-  assert.equal(one(report, 'plaintext-smtp').context.hop, 8);
-  assert.equal(one(report, 'helo-hostname-mismatch').context.hop, 8);
+  assert.deepEqual(hop1.tls, { status: 'plaintext', version: '', cipher: '', bits: '', verify: 'not-applicable', label: 'Plaintext SMTP', absenceReason: 'external-smtp-no-tls-evidence' });
+  assert.equal(one(report, 'plaintext-smtp').context.hop, 1);
+  assert.equal(one(report, 'helo-hostname-mismatch').context.hop, 1);
 
-  const hop4 = report.hops[3];
-  assert.equal(hop4.tls.version, 'TLSv1.2');
-  assert.equal(hop4.tls.cipher, 'ECDHE-RSA-AES256-GCM-SHA384');
-  assert.equal(hop4.tls.bits, '256');
-  assert.equal(hop4.tls.verify, 'FAIL');
-  assert.equal(one(report, 'tls-verification-failed').context.hop, 4);
+  const hop5 = report.hops[4];
+  assert.equal(hop5.tls.version, 'TLSv1.2');
+  assert.equal(hop5.tls.cipher, 'ECDHE-RSA-AES256-GCM-SHA384');
+  assert.equal(hop5.tls.bits, '256');
+  assert.equal(hop5.tls.verify, 'FAIL');
+  assert.equal(one(report, 'tls-verification-failed').context.hop, 5);
 
   const recipient = one(report, 'envelope-recipient-change');
   assert.equal(recipient.severity, 'info');
-  assert.deepEqual(recipient.context.hops, [4, 3]);
+  assert.deepEqual(recipient.context.hops, [5, 6]);
   assert.match(recipient.detail, /dev-alerts@example-corp\.com/);
   assert.match(recipient.detail, /r\.okafor@example-corp\.com/);
 
   const special = one(report, 'special-use-addresses');
   assert.equal(special.severity, 'info');
-  assert.ok(special.context.hops.includes(7));
-  assert.ok(special.context.hops.includes(8));
+  assert.ok(special.context.hops.includes(1));
+  assert.ok(special.context.hops.includes(2));
   assert.match(special.detail, /RFC 1918/);
   assert.match(special.detail, /RFC 5737/);
   assert.match(special.detail, /RFC 2544/);
@@ -156,12 +156,12 @@ test('complex trace exposes transport, peer-address, HELO, recipient, and aggreg
 
 test('complex trace reports structured TLS posture and normal per-hop timing without a queue-delay alarm', () => {
   const report = analyzeMessage(fixture, { inputSource: 'file' });
-  assert.equal(report.hops[5].tls.version, 'TLSv1.3');
-  assert.equal(report.hops[5].tls.cipher, 'TLS_AES_128_GCM_SHA256');
-  assert.equal(report.hops[2].tls.version, 'TLS1_3');
-  assert.equal(report.hops[1].tls.label, 'Google Transport Security');
+  assert.equal(report.hops[2].tls.version, 'TLSv1.3');
+  assert.equal(report.hops[2].tls.cipher, 'TLS_AES_128_GCM_SHA256');
+  assert.equal(report.hops[5].tls.version, 'TLS1_3');
+  assert.equal(report.hops[6].tls.label, 'Google Transport Security');
   assert.equal(report.timing.totalSeconds, 53);
-  assert.deepEqual(report.timing.largest, { fromHop: 6, toHop: 5, seconds: 21 });
+  assert.deepEqual(report.timing.largest, { fromHop: 3, toHop: 4, seconds: 21 });
   assert.ok(!report.findings.some(f => /queue|delay/i.test(f.code) && f.context && f.context.seconds === 21));
 });
 
@@ -442,12 +442,12 @@ test('derived DMARC remains informational when relaxed organizational alignment 
 test('complex fixture gives the trace-break evidence both the literal from claim and observed peer, and normalized timestamp instants', () => {
   const report = analyzeMessage(fixture, { inputSource: 'file' });
   const discontinuity = one(report, 'received-chain-discontinuity');
-  assert.equal(discontinuity.context.newerFrom, '[10.14.7.203]');
+  assert.equal(discontinuity.context.nextTraceFrom, '[10.14.7.203]');
   assert.equal(discontinuity.context.comparedRepresentation, 'literal from token');
-  assert.equal(discontinuity.context.newerObservedPeer, '198.51.100.203');
-  assert.equal(Object.hasOwn(discontinuity.context, 'newerFromRaw'), false);
+  assert.equal(discontinuity.context.nextTraceObservedPeer, '198.51.100.203');
+  assert.equal(Object.hasOwn(discontinuity.context, 'nextTraceFromRaw'), false);
   assert.equal(Object.hasOwn(discontinuity.context, 'comparedValue'), false);
-  assert.equal(Object.hasOwn(discontinuity.context, 'newerOrigin'), false);
+  assert.equal(Object.hasOwn(discontinuity.context, 'nextTraceOrigin'), false);
   assert.match(discontinuity.detail, /literal from token/i);
   assert.match(discontinuity.detail, /observed peer 198\.51\.100\.203/i);
 
@@ -456,14 +456,14 @@ test('complex fixture gives the trace-break evidence both the literal from claim
   assert.match(inversion.detail, /16:19:55 \+0000/i);
   assert.match(inversion.detail, /2026-07-21T16:13:29\.000Z/i);
   assert.match(inversion.detail, /18:13:29 \+0200/i);
-  assert.equal(inversion.context.newerNormalized, '2026-07-21T16:13:29.000Z');
-  assert.equal(inversion.context.olderNormalized, '2026-07-21T16:19:55.000Z');
+  assert.equal(inversion.context.nextTraceNormalized, '2026-07-21T16:13:29.000Z');
+  assert.equal(inversion.context.priorTraceNormalized, '2026-07-21T16:19:55.000Z');
 });
 
 test('complex fixture distinguishes by-only TLS absence from external SMTP without TLS evidence', () => {
   const report = analyzeMessage(fixture, { inputSource: 'file' });
-  assert.equal(report.hops[0].tls.absenceReason, 'by-only');
-  assert.equal(report.hops[7].tls.absenceReason, 'external-smtp-no-tls-evidence');
+  assert.equal(report.hops[7].tls.absenceReason, 'by-only');
+  assert.equal(report.hops[0].tls.absenceReason, 'external-smtp-no-tls-evidence');
 });
 
 test('received address mismatch consistently labels receiver-reported rDNS', () => {
@@ -496,13 +496,60 @@ test('findings carry inspectable evidence and the report has no overall verdict'
   assert.equal(one(report, 'non-crlf-line-endings').severity, 'info');
 });
 
-test('designating hop 3 marks hops 4 through 8 and their findings unverifiable by construction', () => {
+test('designating hop 3 marks hops 1 and 2 and their findings unverifiable by construction', () => {
   const report = analyzeMessage(fixture, { inputSource: 'file', trustedHop: 3 });
-  assert.deepEqual(report.trustBoundary, { designated: true, trustedHop: 3, untrustedFromHop: 4 });
-  assert.deepEqual(report.hops.map(h => h.trust), ['controlled-side', 'controlled-side', 'controlled-side', 'untrusted', 'untrusted', 'untrusted', 'untrusted', 'untrusted']);
-  ['received-chain-discontinuity', 'plaintext-smtp', 'helo-hostname-mismatch', 'tls-verification-failed', 'received-address-mismatch'].forEach(code => {
+  assert.deepEqual(report.trustBoundary, { designated: true, trustedHop: 3, attackerControllableThroughHop: 2 });
+  assert.deepEqual(report.hops.map(h => h.trust), ['untrusted', 'untrusted', 'controlled-side', 'controlled-side', 'controlled-side', 'controlled-side', 'controlled-side', 'controlled-side']);
+  ['received-chain-discontinuity', 'plaintext-smtp', 'helo-hostname-mismatch', 'received-address-mismatch'].forEach(code => {
     const finding = one(report, code);
     assert.equal(finding.unverifiable, true, code);
     assert.match(finding.trustNote, /unverifiable by construction/i);
   });
+});
+
+test('numbers Received hops from the claimed origin and retains corroborated trace breaks as errors', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file', trustedHop: 6 });
+  assert.deepEqual(report.hops.map(hop => hop.index), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.equal(report.hops[0].from, 'mail.internal-crm.example.biz');
+  assert.equal(report.hops[0].by, 'smtp-relay.unrelated-host.example.net');
+  assert.equal(report.hops[7].by, '2001:db8:4021:c0d::1a');
+  assert.equal(report.hops[0].positionLabel, 'claimed origin');
+  assert.equal(report.hops[7].positionLabel, 'final delivery');
+
+  const discontinuity = one(report, 'received-chain-discontinuity');
+  const inversion = one(report, 'received-time-inversion');
+  assert.equal(discontinuity.context.hop, 1);
+  assert.equal(discontinuity.severity, 'error');
+  assert.equal(inversion.context.priorTraceHop, 1);
+  assert.equal(inversion.context.nextTraceHop, 2);
+  assert.equal(inversion.context.correlatedChainBreak, true);
+  assert.deepEqual(one(report, 'special-use-addresses').context.hops, [1, 2, 3, 4, 5, 6, 8]);
+  assert.deepEqual(report.hops.map(hop => hop.trust), ['untrusted', 'untrusted', 'untrusted', 'untrusted', 'untrusted', 'controlled-side', 'controlled-side', 'controlled-side']);
+  assert.match(discontinuity.trustNote, /hop 1/i);
+  assert.match(discontinuity.trustNote, /attacker-controllable/i);
+  assert.deepEqual(report.timing.largest, { fromHop: 3, toHop: 4, seconds: 21 });
+});
+
+test('parses bare parenthetical peers and treats uncorroborated API-pool trace gaps as warnings', () => {
+  const report = analyzeMessage([
+    'Received: from mta-83-184.sparkpostmail.com (mta-83-184.sparkpostmail.com [192.174.83.184]) by mx.example.net with ESMTPS; Thu, 30 Jul 2026 22:17:18 +0000',
+    'Received: from [10.90.22.233] ([10.90.22.233]) by i-098b8b5ca4756c5dc.mta2vrest.sd.prd.sparkpost (ecelerity 5.3.0.76339 r(msys-ecelerity:tags/5.3.0.2)) with REST id 0A/3C-34966-C6DCB6A6; Thu, 30 Jul 2026 22:17:16 +0000',
+    'From: sender@example.org',
+    'To: sanitized-recipient@example.net',
+    'Date: Thu, 30 Jul 2026 22:17:15 +0000',
+    'Message-ID: <sanitized-message@example.org>',
+    '',
+    'body'
+  ].join('\r\n'), { inputSource: 'file' });
+  const injection = report.hops[0];
+  assert.equal(injection.observedAddress, '10.90.22.233');
+  assert.equal(injection.assertedAddress, '10.90.22.233');
+  assert.equal(injection.rdns, '');
+  assert.equal(injection.tls.absenceReason, 'api-injection-no-tls-clause');
+  assert.ok(!findings(report, 'received-address-mismatch').length);
+  assert.match(one(report, 'special-use-addresses').detail, /hop 1: 10\.90\.22\.233 \(RFC 1918\)/);
+  const discontinuity = one(report, 'received-chain-discontinuity');
+  assert.equal(discontinuity.severity, 'warning');
+  assert.match(discontinuity.detail, /missing intermediate trace field is common.*API-injection and pool-relay boundaries/i);
+  assert.match(discontinuity.detail, /gap alone does not indicate forgery/i);
 });

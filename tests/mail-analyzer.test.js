@@ -149,9 +149,9 @@ test('parses Received hops and flags chronology inversions', () => {
     'Received: from old.example by new.example with ESMTP; Wed, 29 Jul 2026 10:06:00 +0000'
   ]);
   const report = analyzeMessage(raw);
-  assert.equal(report.hops[0].from, 'new.example');
-  assert.equal(report.hops[0].by, 'mx.example');
-  assert.equal(report.hops[0].with, 'ESMTPS');
+  assert.equal(report.hops[0].from, 'old.example');
+  assert.equal(report.hops[0].by, 'new.example');
+  assert.equal(report.hops[0].with, 'ESMTP');
   assert.ok(codes(report, 'warning').includes('received-time-inversion'));
 });
 
