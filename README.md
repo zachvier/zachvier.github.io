@@ -15,6 +15,7 @@ repository are served directly through GitHub Pages.
 | HAR Viewer | Available | `.har` / `.json` | [Launch](https://zachvivier.com/har-viewer.html) |
 | Event Log Viewer | Available | Windows `.evtx` | [Launch](https://zachvivier.com/event-viewer.html) |
 | Mail Header Analyzer | Beta | `.eml` / `.txt` / raw message text | [Launch](https://zachvivier.com/mail-analyzer.html) |
+| Certificate Inspector | Available | PEM / CRT / CER / DER certificate or PEM public key | [Launch](https://zachvivier.com/cert-inspector.html) |
 
 ### HAR Viewer
 
@@ -124,6 +125,32 @@ A favorable `Authentication-Results` header proves only that a system wrote
 that result into the message. The analyzer does not determine whether a message
 is legitimate, safe, phishing, or malware-free.
 
+### Certificate Inspector
+
+**Input:** PEM certificates, SubjectPublicKeyInfo public keys, and PKCS#1 RSA
+public keys, plus DER certificates and unarmoured Base64, whether pasted or
+dropped as a file. Common `.crt`, `.cer`, `.pem`, and `.der` files are
+supported. Private-key material is detected and rejected rather than displayed
+or parsed.
+
+**Capabilities:**
+
+- Read X.509 subject, issuer, serial number, version, validity, signature
+  algorithm, key algorithm, certificate fingerprints, and public-key
+  fingerprints.
+- Decode commonly useful extensions including subject alternative names, basic
+  constraints, key usage, extended key usage, and authority/subject key IDs.
+- Present RSA and EC key details with a deterministic visual fingerprint derived
+  from the public key's SHA-256 value.
+- Label every key fingerprint with the structure it covers. Only a
+  SubjectPublicKeyInfo digest is shown as a pin; a PKCS#1 RSAPublicKey digest is
+  marked as not being an SPKI pin, because the two differ for the same key.
+
+**Limitations:** This is a local structure reader, not a trust decision engine.
+It does not validate a chain, check revocation, validate hostnames, retrieve
+intermediates, or verify certificate signatures. A fingerprint or parsed field
+does not establish that a certificate is trusted, current, or safe.
+
 ## Privacy and responsible use
 
 The full statement is available at
@@ -155,8 +182,10 @@ har-viewer.html          Self-contained HAR Viewer
 event-viewer.html        Event Log Viewer and EVTX parser
 mail-analyzer.html       Mail Header Analyzer interface
 mail-analyzer-core.js    Mail parsing and analysis logic
+cert-inspector.html      Certificate Inspector interface
+cert-inspector-core.js   X.509 and public-key parsing logic
 assets/                  Site assets
-tests/                   Mail analyzer tests and fixtures
+tests/                   Tool tests and safe fixtures
 .gitattributes           Disables text conversion and diffs for .eml fixtures
 CNAME                    GitHub Pages custom domain
 ```
@@ -178,8 +207,9 @@ http://localhost:8000/
 
 ## Tests
 
-Automated tests cover the Mail Header Analyzer, CSP and escaping policy across
-all three tools, and an adversarial HAR rendering check in a real browser. The
+Automated tests cover the Mail Header Analyzer, Certificate Inspector, CSP and
+escaping policy across the diagnostic tools, and an adversarial HAR rendering
+check in a real browser. The
 browser check runs when Chrome or Chromium and a Node runtime with global
 WebSocket support are available; otherwise it is skipped. The HAR and EVTX
 parsers do not yet have broad functional test coverage.
