@@ -383,6 +383,8 @@
       var candidate = match[0].replace(/[;,]$/, '');
       if (candidate.indexOf(':') >= 0 && found.indexOf(candidate) < 0) found.push(candidate);
     }
+    var bracketedV6 = /\[([0-9a-f:]+)\]/ig;
+    while ((match = bracketedV6.exec(text))) if (match[1].indexOf(':') >= 0 && found.indexOf(match[1]) < 0) found.push(match[1]);
     return found;
   }
 
@@ -390,6 +392,9 @@
     var ip = normalizeTraceHost(value);
     if (ip === '::1') return 'loopback';
     if (/^fe[89ab][0-9a-f]:/i.test(ip)) return 'link-local';
+    if (/^f[cd][0-9a-f]{2}:/i.test(ip)) return 'unique local';
+    if (/^2002:/i.test(ip)) return '6to4';
+    if (/^64:ff9b:/i.test(ip)) return 'NAT64';
     if (/^2001:db8:/i.test(ip)) return 'RFC 3849 documentation';
     if (!isIpv4(ip)) return '';
     var p = ip.split('.').map(Number);
@@ -450,6 +455,7 @@
       var fromDetails = traceFromDetails(value, hop.from);
       Object.keys(fromDetails).forEach(function (key) { hop[key] = fromDetails[key]; });
       hop.origin = hop.observedAddress || hop.claimedHostname || hop.assertedAddress || hop.from;
+      hop.loopbackPeer = isLoopbackHost(hop.observedAddress);
       hop.tls = parseHopTls(value, hop);
       hop.addresses = extractTraceAddresses(value);
       var xOriginating = messageContext && messageContext.xOriginatingIp;
@@ -479,7 +485,7 @@
       var prior = hops[hi], next = hops[hi + 1];
       if (!next.from || !prior.by) continue;
       if (traceEndpointsMatch(next, prior)) continue;
-      if (isLoopbackHost(next.from) && normalizeTraceHost(next.by) === normalizeTraceHost(prior.by)) continue;
+      if (next.loopbackPeer || (isLoopbackHost(next.from) && normalizeTraceHost(next.by) === normalizeTraceHost(prior.by))) continue;
       var inversion = findings.filter(function (item) { return item.code === 'received-time-inversion' && item.context.priorTraceHop === prior.index; })[0];
       if (inversion) {
         inversion.severity = 'error';
@@ -666,6 +672,7 @@
       var candidates = dkimRecordSignatureCandidates(record, signatures), signature = candidates.length === 1 ? candidates[0] : null;
       if (signature) {
         record.signatureDomain = signature.domain;
+        record.signatureSelector = signature.selector;
         signature.reports.push({ result: record.result, evaluator: record.evaluator, source: record.source, arcInstance: record.arcInstance, sealer: record.sealer, headerB: record.headerB });
       }
     });
@@ -739,6 +746,104 @@
       verified: false,
       caveat: 'These are method results reported by Authentication-Results and Received-SPF fields. ARC set presence is counted separately. This local structural analyzer does not query DNS, validate DKIM body hashes or signatures, validate ARC seals, or establish which result and trace fields are trustworthy.'
     };
+  }
+
+  function traceHostMatches(a, b) {
+    var left = normalizeTraceHost(a), right = normalizeTraceHost(b);
+    return !!left && !!right && left === right;
+  }
+
+  function relatedTraceHosts(a, b) {
+    var left = normalizeTraceHost(a), right = normalizeTraceHost(b);
+    if (!left || !right || left.indexOf(':') >= 0 || right.indexOf(':') >= 0 || isIpv4(left) || isIpv4(right)) return false;
+    if (left === right || left.slice(-(right.length + 1)) === '.' + right || right.slice(-(left.length + 1)) === '.' + left) return true;
+    return false;
+  }
+
+  function sameTraceDomain(a, b) {
+    var left = normalizeTraceHost(a), right = normalizeTraceHost(b);
+    if (!left || !right || left.indexOf(':') >= 0 || right.indexOf(':') >= 0 || isIpv4(left) || isIpv4(right)) return false;
+    var leftParts = left.split('.'), rightParts = right.split('.');
+    return leftParts.length >= 2 && rightParts.length >= 2 && leftParts.slice(-2).join('.') === rightParts.slice(-2).join('.');
+  }
+
+  function diagramTransport(hop, priorNode) {
+    var parts = [];
+    if (hop.with) parts.push(hop.with);
+    if (/^REST$/i.test(hop.with || '')) parts.push('API injection');
+    if (hop.loopbackPeer) parts.push('loopback peer');
+    if (hop.tls.absenceReason === 'by-only') {
+      parts.push(sameTraceDomain(priorNode && priorNode.label, hop.by) ? 'peer not stated · same-domain handoff' : 'peer not stated');
+    } else {
+      if (hop.tls.version) parts.push(hop.tls.version);
+      if (hop.tls.cipher) parts.push(hop.tls.cipher);
+      if (!hop.tls.absenceReason && hop.tls.verify) parts.push('verify=' + hop.tls.verify);
+      if (hop.tls.absenceReason) parts.push('no TLS clause stated');
+      else if (!hop.tls.version && !hop.tls.cipher && hop.tls.label) parts.push(hop.tls.label);
+    }
+    return parts.join(' · ') || 'protocol not stated';
+  }
+
+  function buildTraceDiagram(hops, findings, auth, deliveredTo, trustBoundary) {
+    var nodes = [], edges = [], breaks = [], unattachedClaims = [], current = null, discontinuities = {};
+    findings.filter(function (item) { return item.code === 'received-chain-discontinuity'; }).forEach(function (item) { discontinuities[item.context.hop] = item; });
+    function addNode(label, hop, type) {
+      var nodeType = type || 'mta', nodeLabel = label || '(host not stated)';
+      var node = { id: 'node-' + (nodes.length + 1), label: nodeLabel, observedPeer: nodeType === 'origin' && hop && normalizeTraceHost(nodeLabel) !== normalizeTraceHost(hop.observedAddress) ? hop.observedAddress : '', hops: [], annotations: [], claims: [], trust: hop ? hop.trust : 'undesignated', type: nodeType, timestamp: nodeType === 'origin' ? '' : hop && hop.date || '' };
+      nodes.push(node); return node;
+    }
+    hops.forEach(function (hop, index) {
+      var priorHop = index ? hops[index - 1] : null, discontinuity = priorHop && discontinuities[priorHop.index];
+      var sourceLabel = hop.claimedHostname || hop.from || hop.origin;
+      if (!current || discontinuity) current = addNode(sourceLabel, hop, 'origin');
+      var sameReceiver = current && traceHostMatches(current.label, hop.by);
+      if (sameReceiver) {
+        if (isLoopbackHost(hop.from) && traceHostMatches(hop.by, current.label)) current.annotations.push({ kind: 'local-re-injection', label: 'local re-injection', hop: hop.index, evidence: 'from ' + hop.from + ' by ' + hop.by });
+        current.hops.push(hop.index);
+        return;
+      }
+      var destination = addNode(hop.by, hop, 'mta');
+      destination.hops.push(hop.index);
+      var interval = 'not-stated';
+      if (priorHop && priorHop.timestamp !== null && hop.timestamp !== null) interval = priorHop.timestamp > hop.timestamp ? 'inverted' : (hop.deltaFromPreviousSeconds !== undefined ? '+' + hop.deltaFromPreviousSeconds + 's' : 'not-stated');
+      edges.push({ hop: hop.index, from: current.id, to: destination.id, transport: diagramTransport(hop, current), peerNotStated: hop.tls.absenceReason === 'by-only', loopbackPeer: hop.loopbackPeer, interval: interval, timestamp: hop.date, raw: hop.raw });
+      current = destination;
+      if (discontinuity) breaks.push({ hop: priorHop.index, severity: discontinuity.severity, from: discontinuity.context.priorTraceBy || '(receiver not stated)', to: sourceLabel || '(origin not stated)', comparedToken: hop.from || '', findingCode: discontinuity.code });
+    });
+    var delivery = { label: deliveredTo || (hops.length && hops[hops.length - 1].for) || '', type: 'delivery-mailbox' };
+    var claims = (auth.records || []).map(function (record) { return { field: record.source, method: record.method, result: record.result, evaluator: record.evaluator, arcInstance: record.arcInstance, sealer: record.sealer, signingDomain: record.signatureDomain || record.headerDomain || '', signingSelector: record.signatureSelector || record.properties['header.s'] || '', mailFromDomain: domainFromMailbox(record.properties['smtp.mailfrom'] || ''), clientIp: record.properties['client-ip'] || '', fromDomain: record.properties['header.from'] || '', line: record.line }; }).concat((auth.receivedSpf || []).map(function (record) { return { field: 'Received-SPF', method: 'spf', result: record.result, evaluator: record.evaluator, domain: record.domain, mailFromDomain: record.domain, clientIp: record.clientIp, line: record.line }; }));
+    claims.forEach(function (claim) {
+      var matches = nodes.filter(function (node) { return node.type === 'mta' && (relatedTraceHosts(claim.evaluator, node.label) || relatedTraceHosts(claim.sealer, node.label)); });
+      if (matches.length > 1) {
+        var established = matches.filter(function (node) { return node.claims.some(function (existing) { return relatedTraceHosts(existing.evaluator, node.label); }); });
+        if (established.length === 1) matches = established;
+      }
+      if (matches.length === 1) matches[0].claims.push(claim); else unattachedClaims.push(claim);
+    });
+    nodes.forEach(function (node) {
+      var uniqueClaims = {};
+      node.claims.forEach(function (claim) {
+        var identity = claim.method === 'dkim' ? claim.signingDomain + '|' + claim.signingSelector : claim.method === 'spf' ? claim.mailFromDomain + '|' + claim.clientIp : claim.method === 'dmarc' ? claim.fromDomain : claim.method + '|' + claim.evaluator;
+        var key = claim.method + '|' + claim.result + '|' + identity;
+        if (!uniqueClaims[key]) { uniqueClaims[key] = claim; uniqueClaims[key].fields = [claim.field]; uniqueClaims[key].arcInstances = claim.arcInstance == null ? [] : [claim.arcInstance]; }
+        else {
+          if (uniqueClaims[key].fields.indexOf(claim.field) < 0) uniqueClaims[key].fields.push(claim.field);
+          if (claim.arcInstance != null && uniqueClaims[key].arcInstances.indexOf(claim.arcInstance) < 0) uniqueClaims[key].arcInstances.push(claim.arcInstance);
+        }
+      });
+      node.claims = Object.keys(uniqueClaims).map(function (key) { return uniqueClaims[key]; });
+    });
+    nodes.forEach(function (node) {
+      node.findings = findings.filter(function (findingItem) {
+        var context = findingItem.context || {}, cited = [];
+        if (Number.isInteger(context.hop)) cited.push(context.hop);
+        if (Number.isInteger(context.priorTraceHop)) cited.push(context.priorTraceHop);
+        if (Number.isInteger(context.nextTraceHop)) cited.push(context.nextTraceHop);
+        if (Array.isArray(context.hops)) cited = cited.concat(context.hops);
+        return cited.some(function (hop) { return node.hops.indexOf(hop) >= 0; });
+      }).map(function (findingItem) { return { code: findingItem.code, severity: findingItem.severity, hop: findingItem.context && findingItem.context.hop || null }; });
+    });
+    return { nodes: nodes, edges: edges, breaks: breaks, delivery: delivery, unattachedClaims: unattachedClaims, trustBoundary: trustBoundary, caveat: 'Node and edge labels are parsed from Received, Delivered-To, Authentication-Results, ARC-Authentication-Results, and Received-SPF fields; authentication values remain reported claims, not verification.' };
   }
 
   function analyzeMessage(raw, suppliedOptions) {
@@ -820,6 +925,7 @@
     var timing = calculateHopTiming(hops);
     var auth = authentication(headers, map, findings, identities);
     var trustBoundary = applyTrustBoundary(hops, findings, suppliedOptions && suppliedOptions.trustedHop);
+    var traceDiagram = buildTraceDiagram(hops, findings, auth, (map['delivered-to'] || [''])[0], trustBoundary);
     var severityRank = { error: 0, warning: 1, info: 2 };
     findings.sort(function (a, b) { return severityRank[a.severity] - severityRank[b.severity] || (a.line || 999999) - (b.line || 999999); });
     var count = function (sev) { return findings.filter(function (f) { return f.severity === sev; }).length; };
@@ -828,11 +934,12 @@
       findings: findings,
       trustBoundary: trustBoundary,
       identities: identities,
-      headers: { count: headers.length, fields: headers, subjectDecoded: decodeHeaderValue((map.subject || [''])[0]), from: decodeHeaderValue((map.from || [''])[0]), to: decodeHeaderValue((map.to || [''])[0]), date: (map.date || [''])[0], messageId: (map['message-id'] || [''])[0] },
+      headers: { count: headers.length, fields: headers, subjectDecoded: decodeHeaderValue((map.subject || [''])[0]), from: decodeHeaderValue((map.from || [''])[0]), to: decodeHeaderValue((map.to || [''])[0]), deliveredTo: (map['delivered-to'] || [''])[0], date: (map.date || [''])[0], messageId: (map['message-id'] || [''])[0] },
       mime: { totalParts: mimeState.totalParts, leafParts: mimeState.leafParts, maxDepth: mimeState.maxDepth, tree: rootNode },
       hops: hops,
       timing: timing,
       authentication: auth,
+      traceDiagram: traceDiagram,
       meta: { characters: originalCharacters, analyzedCharacters: raw.length, truncated: analysisState.truncated || mimeState.truncated, lineEndings: { crlf: crlf, bareLf: bareLf, bareCr: bareCr } },
       caveats: [
         'Structural checks are heuristic and cannot reproduce every MTA or gateway policy.',

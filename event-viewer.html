@@ -198,6 +198,18 @@
   }
   @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
 </style>
+<style>
+  :root{--bg:#201d1d;--surface:#302c2c;--surface2:#282424;--surface3:#403a3a;--border:rgba(253,252,252,.12);--border2:#646262;--text:#fdfcfc;--text-mid:#d1cece;--text-muted:#9a9898;--ok:#30d158;--ok-dim:rgba(48,209,88,.12);--warn:#ff9f0a;--warn-dim:rgba(255,159,10,.14);--err:#ff3b30;--err-dim:rgba(255,59,48,.14);--info:#007aff;--info-dim:rgba(0,122,255,.14);--alt:#ff9f0a;--alt-dim:rgba(255,159,10,.14);--mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace;--sans:var(--mono);--bar-bg:#201d1d;--row-line:rgba(253,252,252,.08);--row-hover:rgba(0,122,255,.1);--sel-line:rgba(253,252,252,.1);--mark-bg:rgba(255,159,10,.28);--info-text:#66aaff;--err-text:#ff6961;--ok-text:#30d158;--accent:#007aff;--scroll:#646262;--scroll-hi:#9a9898;--shadow:none;--xtag:#66aaff;--xatt:#30d158;--xval:#ff9f0a}
+  :root[data-theme="light"]{--bg:#fdfcfc;--surface:#f8f7f7;--surface2:#f1eeee;--surface3:#e5e1e1;--border:rgba(15,0,0,.12);--border2:#9a9898;--text:#201d1d;--text-mid:#424245;--text-muted:#6e6e73;--ok:#198f38;--ok-dim:rgba(48,209,88,.12);--warn:#b26500;--warn-dim:rgba(255,159,10,.14);--err:#d70015;--err-dim:rgba(255,59,48,.12);--info:#007aff;--info-dim:rgba(0,122,255,.1);--alt:#b26500;--alt-dim:rgba(255,159,10,.12);--bar-bg:#fdfcfc;--row-line:rgba(15,0,0,.08);--row-hover:rgba(0,122,255,.08);--sel-line:rgba(15,0,0,.1);--mark-bg:rgba(255,159,10,.32);--info-text:#0056b3;--err-text:#d70015;--ok-text:#198f38;--accent:#007aff;--scroll:#9a9898;--scroll-hi:#646262;--shadow:none;--xtag:#0056b3;--xatt:#198f38;--xval:#b26500}
+  body,button,input,select{font-family:var(--mono)}
+  :focus-visible{outline-color:var(--info)}
+  .mark-bar{border-radius:0;background:var(--info)}.card::before{display:none}
+  .card,.drop,#err,.theme-fab,.chip,.btn,.stat,.search input,select,.lvl,pre.xml,.hint{border-radius:4px;box-shadow:none}
+  .card{max-width:680px;padding:40px;border-color:var(--border2)}.card h1{font-size:24px;line-height:1.5}.drop{border-style:solid;padding:32px 24px}
+  .theme-fab,.btn{transition:color 120ms,background 120ms,border-color 120ms}.bar-mark::before{border-radius:0;background:var(--info)}
+  tbody tr.sel{box-shadow:inset 2px 0 0 var(--info)}
+  @media(max-width:640px){.card{padding:24px 20px}}
+</style>
 </head>
 <body>
 

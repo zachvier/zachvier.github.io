@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Privacy, risk, and responsible-use information for the local browser tools on zachvivier.com.">
-  <meta name="theme-color" content="#001219">
+  <meta name="theme-color" content="#201d1d">
   <title>Privacy & Usage — Zach Vivier</title>
   <link rel="icon" type="image/png" href="assets/zv-logo.png">
   <style>
@@ -109,6 +109,21 @@
       section { grid-template-columns:1fr; gap:12px; padding:26px 0; }
       footer { align-items:flex-start; flex-direction:column; }
     }
+  </style>
+  <style>
+    :root{--night:#201d1d;--ocean:#302c2c;--teal:#007aff;--mint:#fdfcfc;--sand:#fdfcfc;--amber:#30d158;--muted:#9a9898;--line:#646262;--max:880px;--mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+    body{font:400 16px/1.5 var(--mono)}
+    :focus-visible{outline-color:var(--teal)}
+    .site-header{position:sticky;top:0;z-index:10;width:min(calc(100% - 48px),var(--max));padding:24px 0;background:var(--night);border-color:var(--line)}
+    .brand{font-size:16px;font-weight:700}.brand img{display:none}.brand::before{content:"[";color:#30d158}.brand::after{content:"]";color:#30d158}
+    .back{color:var(--sand);font-size:14px;text-decoration:underline;text-underline-offset:4px}.back:hover{color:var(--teal)}
+    main{padding:80px 0 96px}.eyebrow{display:block;margin-bottom:24px;color:#30d158;font:500 16px/1.5 var(--mono);letter-spacing:0;text-transform:none}.eyebrow::before{content:"$ ";display:inline;width:auto;height:auto;background:none;color:var(--muted)}
+    h1{max-width:720px;color:var(--sand);font-size:clamp(28px,5vw,38px);font-weight:700;letter-spacing:0;line-height:1.5}
+    .lede{margin:24px 0 64px;color:var(--muted);font-size:16px;line-height:1.5}.lede strong{color:var(--sand)}
+    .sections{border-color:var(--line)}section{grid-template-columns:200px 1fr;gap:32px;padding:32px 0;border-color:var(--line)}
+    h2{color:#30d158;font:700 16px/1.5 var(--mono);letter-spacing:0;text-transform:none}section div{color:var(--muted);font-size:16px;line-height:1.5}section strong{color:var(--sand)}
+    footer{width:min(calc(100% - 48px),var(--max));border-color:var(--line);color:var(--muted);font-size:14px}footer a{text-decoration:underline;text-underline-offset:4px}footer a:hover{color:var(--teal)}
+    @media(max-width:650px){.site-header,main,footer{width:calc(100% - 32px)}main{padding:64px 0}h1{font-size:28px}section{grid-template-columns:1fr;gap:8px}}
   </style>
 </head>
 <body>

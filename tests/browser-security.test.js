@@ -291,8 +291,25 @@ test('diagnostic pages run under CSP and hostile HAR values remain inert', { tim
     assert.match(complexProjection.findings, /Received trace does not connect at hop 1/);
     assert.match(complexProjection.findings, /Plaintext SMTP reported at hop 1/);
 
-    await evaluate(browser.client, mailSession, "const select=document.querySelector('#trustedHop');select.value='3';select.dispatchEvent(new Event('change',{bubbles:true}));true");
-    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelectorAll('#hops .hop.untrusted').length === 2 && document.querySelectorAll('#findings .trust-note').length >= 4"), 'trust boundary did not label hops and findings');
+    await evaluate(browser.client, mailSession, "document.querySelector('#hopDiagramView').click();true");
+    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelectorAll('#traceDiagram .diagram-node').length === 10"), 'mail analyzer did not render the trace diagram');
+    const diagramProjection = await evaluate(browser.client, mailSession, `(() => ({
+      diagram: document.querySelector('#traceDiagram').textContent,
+      text: document.querySelector('#traceText').textContent,
+      listHidden: document.querySelector('#hops').hidden,
+      flowSelected: document.querySelector('#hopDiagramView').getAttribute('aria-pressed')
+    }))()`);
+    assert.equal(diagramProjection.listHidden, true);
+    assert.equal(diagramProjection.flowSelected, 'true');
+    assert.match(diagramProjection.diagram, /Trace break \(error\).*no connecting arrow/);
+    assert.match(diagramProjection.diagram, /TLSv1\.2.*verify=FAIL/);
+    assert.match(diagramProjection.diagram, /timestamp interval inverted/);
+    assert.match(diagramProjection.diagram, /peer not stated/);
+    assert.match(diagramProjection.diagram, /ARC-Authentication-Results.*i=1/);
+    assert.match(diagramProjection.text, /Node lists\.dev-community\.example\.org/);
+
+    await evaluate(browser.client, mailSession, "const select=document.querySelector('#trustedHop');select.value='6';select.dispatchEvent(new Event('change',{bubbles:true}));true");
+    await waitFor(() => evaluate(browser.client, mailSession, "document.querySelectorAll('#hops .hop.untrusted').length === 5 && document.querySelectorAll('#findings .trust-note').length >= 4 && document.querySelector('#traceDiagram').textContent.includes('Trust boundary · hops 1 through 5')"), 'trust boundary did not label hops, findings, and diagram');
 
     const unmatchedDkimMessage = [
       'Authentication-Results: mx.example; dkim=fail header.i=@unmatched.example header.b=missing123',

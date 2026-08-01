@@ -240,6 +240,17 @@
 
   @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
 </style>
+<style>
+  :root{--bg:#201d1d;--surface:#302c2c;--surface2:#282424;--surface3:#403a3a;--border:rgba(253,252,252,.12);--border2:#646262;--text:#fdfcfc;--text-mid:#d1cece;--text-muted:#9a9898;--green:#30d158;--green-dim:rgba(48,209,88,.12);--amber:#ff9f0a;--amber-dim:rgba(255,159,10,.14);--red:#ff3b30;--red-dim:rgba(255,59,48,.14);--blue:#007aff;--blue-dim:rgba(0,122,255,.14);--violet:#ff9f0a;--violet-dim:rgba(255,159,10,.14);--mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace;--sans:var(--mono);--bar-bg:#201d1d;--row-line:rgba(253,252,252,.08);--row-hover:rgba(0,122,255,.1);--sel-line:rgba(253,252,252,.1);--mark-bg:rgba(255,159,10,.28);--blue-text:#66aaff;--red-text:#ff6961;--green-text:#30d158;--accent:#007aff;--scroll:#646262;--scroll-hi:#9a9898;--shadow:none;--jkey:#66aaff;--jstr:#fdfcfc;--jnum:#ff9f0a;--jbool:#30d158;--wf-pre:rgba(253,252,252,.22);--wf-wait:#007aff;--wf-recv:#30d158}
+  :root[data-theme="light"]{--bg:#fdfcfc;--surface:#f8f7f7;--surface2:#f1eeee;--surface3:#e5e1e1;--border:rgba(15,0,0,.12);--border2:#9a9898;--text:#201d1d;--text-mid:#424245;--text-muted:#6e6e73;--green:#198f38;--green-dim:rgba(48,209,88,.12);--amber:#b26500;--amber-dim:rgba(255,159,10,.14);--red:#d70015;--red-dim:rgba(255,59,48,.12);--blue:#007aff;--blue-dim:rgba(0,122,255,.1);--violet:#b26500;--violet-dim:rgba(255,159,10,.12);--bar-bg:#fdfcfc;--row-line:rgba(15,0,0,.08);--row-hover:rgba(0,122,255,.08);--sel-line:rgba(15,0,0,.1);--mark-bg:rgba(255,159,10,.32);--blue-text:#0056b3;--red-text:#d70015;--green-text:#198f38;--accent:#007aff;--scroll:#9a9898;--scroll-hi:#646262;--shadow:none;--jkey:#0056b3;--jstr:#201d1d;--jnum:#b26500;--jbool:#198f38;--wf-pre:rgba(15,0,0,.18);--wf-wait:#007aff;--wf-recv:#30d158}
+  body,button,input,select{font-family:var(--mono)}
+  :focus-visible{outline-color:var(--blue)}
+  .card,.drop,#err,.theme-fab,.chip,.btn,.stat,.search input,select,.lvl,pre.code,.hint,.modal-in,img.prev{border-radius:4px;box-shadow:none}
+  .card::before{display:none}.card{max-width:680px;padding:40px;border-color:var(--border2)}.card h1{font-size:24px;line-height:1.5}.drop{border-style:solid;padding:32px 24px}
+  .theme-fab,.btn{transition:color 120ms,background 120ms,border-color 120ms}.bar-mark::before{border-radius:0;background:var(--blue)}
+  tbody tr.sel{box-shadow:inset 2px 0 0 var(--blue)}.modal{background:rgba(32,29,29,.88)}
+  @media(max-width:640px){.card{padding:24px 20px}}
+</style>
 </head>
 <body>
 
