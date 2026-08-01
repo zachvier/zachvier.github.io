@@ -553,3 +553,98 @@ test('parses bare parenthetical peers and treats uncorroborated API-pool trace g
   assert.match(discontinuity.detail, /missing intermediate trace field is common.*API-injection and pool-relay boundaries/i);
   assert.match(discontinuity.detail, /gap alone does not indicate forgery/i);
 });
+
+test('builds an observed-only flow diagram model with collapsed list processing and attached authentication claims', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file', trustedHop: 6 });
+  const diagram = report.traceDiagram;
+  assert.ok(diagram);
+  assert.equal(diagram.delivery.label, 'r.okafor@example-corp.com');
+  assert.equal(diagram.nodes.filter(node => node.label === 'lists.dev-community.example.org').length, 1);
+  const listNode = diagram.nodes.find(node => node.label === 'lists.dev-community.example.org');
+  assert.ok(listNode.annotations.some(annotation => annotation.kind === 'local-re-injection' && annotation.hop === 4));
+  assert.ok(listNode.claims.some(claim => claim.arcInstance === 1));
+  const gateway = diagram.nodes.find(node => node.label === 'gateway.corp-relay.example.net');
+  assert.ok(gateway.claims.some(claim => claim.arcInstance === 2));
+  assert.ok(gateway.claims.some(claim => claim.field === 'Received-SPF'));
+  const google = diagram.nodes.find(node => node.label === 'mx.google.com');
+  assert.ok(google.claims.some(claim => claim.evaluator === 'mx.google.com'));
+  assert.ok(google.claims.some(claim => claim.field === 'Received-SPF' && claim.evaluator === 'google.com'));
+  const breakAtOne = diagram.breaks.find(item => item.hop === 1);
+  assert.deepEqual({ severity: breakAtOne.severity, from: breakAtOne.from, to: breakAtOne.to }, { severity: 'error', from: 'smtp-relay.unrelated-host.example.net', to: '[10.14.7.203]' });
+  assert.equal(diagram.edges.find(edge => edge.hop === 2).interval, 'inverted');
+  assert.match(diagram.edges.find(edge => edge.hop === 5).transport, /TLSv1\.2.*verify=FAIL/);
+  assert.ok(diagram.edges.filter(edge => edge.peerNotStated).every(edge => /peer not stated/.test(edge.transport)));
+  assert.equal(diagram.trustBoundary.attackerControllableThroughHop, 5);
+});
+
+test('diagram preserves a REST injection host, warning trace break, and Delivered-To mailbox without vendor labels', () => {
+  const report = analyzeMessage([
+    'Delivered-To: sanitized-recipient@example.net',
+    'Received: from mta-83-184.sparkpostmail.com (mta-83-184.sparkpostmail.com [192.174.83.184]) by mx.example.net with ESMTPS; Thu, 30 Jul 2026 22:17:18 +0000',
+    'Received: from [10.90.22.233] ([10.90.22.233]) by i-098b8b5ca4756c5dc.mta2vrest.sd.prd.sparkpost (ecelerity 5.3.0.76339) with REST; Thu, 30 Jul 2026 22:17:16 +0000',
+    'From: sender@example.org', 'To: sanitized-recipient@example.net', 'Date: Thu, 30 Jul 2026 22:17:15 +0000', 'Message-ID: <sanitized-message@example.org>', '', 'body'
+  ].join('\r\n'), { inputSource: 'file' });
+  const diagram = report.traceDiagram;
+  assert.equal(diagram.delivery.label, 'sanitized-recipient@example.net');
+  assert.ok(diagram.nodes.some(node => node.label === 'i-098b8b5ca4756c5dc.mta2vrest.sd.prd.sparkpost'));
+  assert.match(diagram.edges.find(edge => edge.hop === 1).transport, /REST.*no TLS clause stated/);
+  assert.equal(diagram.breaks[0].severity, 'warning');
+  assert.ok(!JSON.stringify(diagram).match(/Amazon SES|EmailOctopus campaign engine|Google mail server/i));
+});
+
+test('diagram origin uses the claimed hostname without borrowing its receiving timestamp', () => {
+  const report = analyzeMessage(fixture, { inputSource: 'file' });
+  const origin = report.traceDiagram.nodes[0];
+  assert.equal(origin.label, 'mail.internal-crm.example.biz');
+  assert.equal(origin.observedPeer, '198.18.7.11');
+  assert.equal(origin.timestamp, '');
+});
+
+test('diagram keeps a bare asserted literal as the origin label and exposes DKIM signing identities', () => {
+  const report = analyzeMessage([
+    'Received: from [10.90.22.233] ([10.90.22.233]) by injection.example.net with REST; Thu, 30 Jul 2026 22:17:16 +0000',
+    'Authentication-Results: injection.example.net; dkim=pass header.i=@sender.example header.s=campaign header.b=abc123',
+    'From: sender@example.org', 'To: sanitized@example.net', 'Date: Thu, 30 Jul 2026 22:17:15 +0000', 'Message-ID: <sanitized@example.org>', '', 'body'
+  ].join('\r\n'), { inputSource: 'file' });
+  assert.equal(report.traceDiagram.nodes[0].label, '[10.90.22.233]');
+  const claim = report.traceDiagram.nodes.find(node => node.label === 'injection.example.net').claims.find(item => item.method === 'dkim');
+  assert.equal(claim.signingDomain, 'sender.example');
+  assert.equal(claim.signingSelector, 'campaign');
+});
+
+test('classifies required IPv6 special-use allocations without making a traffic claim', () => {
+  const report = analyzeMessage([
+    'Received: from [::1] by [fe80::1] with SMTP; Thu, 30 Jul 2026 22:17:16 +0000',
+    'Received: from [fc00::1] by [2002::1] with SMTP; Thu, 30 Jul 2026 22:17:17 +0000',
+    'Received: from [64:ff9b::1] by [2001:db8::1] with SMTP; Thu, 30 Jul 2026 22:17:18 +0000',
+    'From: sender@example.org', 'To: sanitized@example.net', 'Date: Thu, 30 Jul 2026 22:17:15 +0000', 'Message-ID: <sanitized@example.org>', '', 'body'
+  ].join('\r\n'), { inputSource: 'file' });
+  const special = one(report, 'special-use-addresses');
+  assert.match(special.detail, /loopback/);
+  assert.match(special.detail, /link-local/);
+  assert.match(special.detail, /unique local/);
+  assert.match(special.detail, /6to4/);
+  assert.match(special.detail, /NAT64/);
+});
+
+test('treats a hostname with an observed loopback peer as a local continuation', () => {
+  const report = analyzeMessage([
+    'Received: from mta006-md-usw2.delv.a.intuit.com ([127.0.0.1]) by mail238.us4.mandrillapp.com with ESMTP; Thu, 30 Jul 2026 22:17:17 +0000',
+    'Received: from mandrillapp.com by prior.example.net with ESMTP; Thu, 30 Jul 2026 22:17:16 +0000',
+    'From: sender@example.org', 'To: sanitized@example.net', 'Date: Thu, 30 Jul 2026 22:17:15 +0000', 'Message-ID: <sanitized@example.org>', '', 'body'
+  ].join('\r\n'), { inputSource: 'file' });
+  assert.ok(!findings(report, 'received-chain-discontinuity').length);
+  assert.ok(report.traceDiagram.nodes.some(node => node.label === 'prior.example.net'));
+  assert.ok(report.traceDiagram.nodes.some(node => node.label === 'mail238.us4.mandrillapp.com'));
+  assert.ok(report.traceDiagram.edges.some(edge => edge.hop === 2 && edge.loopbackPeer));
+});
+
+test('diagram omits verification status when the Received field states no TLS clause', () => {
+  const report = analyzeMessage([
+    'Received: from relay.example.net by mx.example.net with REST; Thu, 30 Jul 2026 22:17:16 +0000',
+    'From: sender@example.org', 'To: sanitized@example.net', 'Date: Thu, 30 Jul 2026 22:17:15 +0000', 'Message-ID: <sanitized@example.org>', '', 'body'
+  ].join('\r\n'), { inputSource: 'file' });
+  const edge = report.traceDiagram.edges[0];
+  assert.match(edge.transport, /no TLS clause stated/);
+  assert.doesNotMatch(edge.transport, /verify=not-stated/);
+});
