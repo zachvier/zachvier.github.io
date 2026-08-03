@@ -4,134 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Privacy, risk, and responsible-use information for the local browser tools on zachvivier.com.">
-  <meta name="theme-color" content="#201d1d">
-  <title>Privacy & Usage — Zach Vivier</title>
+  <meta name="theme-color" content="#141414">
+  <title>Privacy &amp; Usage — Zach Vivier</title>
   <link rel="icon" type="image/png" href="assets/zv-logo.png">
-  <style>
-    :root {
-      --night:#001219;
-      --ocean:#005f73;
-      --teal:#0a9396;
-      --mint:#94d2bd;
-      --sand:#e9d8a6;
-      --amber:#ee9b00;
-      --muted:#9ab5ad;
-      --line:rgba(148,210,189,.2);
-      --max:900px;
-      color-scheme:dark;
-    }
-    * { box-sizing:border-box; }
-    body {
-      min-height:100vh;
-      margin:0;
-      background:var(--night);
-      color:var(--sand);
-      font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      -webkit-font-smoothing:antialiased;
-    }
-    a { color:inherit; }
-    :focus-visible { outline:2px solid var(--amber); outline-offset:4px; }
-    .site-header {
-      display:flex;
-      width:min(calc(100% - 48px),1180px);
-      margin:0 auto;
-      padding:28px 0;
-      align-items:center;
-      justify-content:space-between;
-      border-bottom:1px solid var(--line);
-    }
-    .brand {
-      display:inline-flex;
-      align-items:center;
-      gap:11px;
-      color:var(--sand);
-      font-size:14px;
-      font-weight:760;
-      letter-spacing:.04em;
-      text-decoration:none;
-    }
-    .brand img { display:block; width:50px; height:auto; }
-    .back { color:var(--muted); font-size:13px; font-weight:650; text-decoration:none; }
-    .back:hover { color:var(--mint); }
-    main { width:min(calc(100% - 48px),var(--max)); margin:0 auto; padding:96px 0 110px; }
-    .eyebrow {
-      display:flex;
-      margin:0 0 22px;
-      align-items:center;
-      gap:12px;
-      color:var(--mint);
-      font:650 12px/1.2 "SFMono-Regular",Consolas,monospace;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-    }
-    .eyebrow::before { content:""; width:34px; height:2px; background:var(--amber); }
-    h1 {
-      max-width:800px;
-      margin:0;
-      color:#fff7df;
-      font-size:clamp(48px,7vw,80px);
-      font-weight:820;
-      letter-spacing:-.055em;
-      line-height:.96;
-    }
-    .lede { max-width:720px; margin:30px 0 64px; color:var(--muted); font-size:19px; line-height:1.65; }
-    .lede strong { color:var(--sand); }
-    .sections { border-top:1px solid var(--line); }
-    section { display:grid; grid-template-columns:190px 1fr; gap:42px; padding:32px 0; border-bottom:1px solid var(--line); }
-    h2 { margin:3px 0 0; color:var(--mint); font:700 12px/1.4 "SFMono-Regular",Consolas,monospace; letter-spacing:.1em; text-transform:uppercase; }
-    section div { color:var(--muted); font-size:15px; line-height:1.7; }
-    section p { margin:0; }
-    section p + p { margin-top:14px; }
-    section strong { color:var(--sand); }
-    footer {
-      display:flex;
-      width:min(calc(100% - 48px),1180px);
-      margin:0 auto;
-      padding:40px 0 48px;
-      align-items:center;
-      justify-content:space-between;
-      gap:24px;
-      border-top:1px solid var(--line);
-      color:#789b91;
-      font-size:12px;
-    }
-    footer nav { display:flex; flex-wrap:wrap; gap:22px; }
-    footer a { text-decoration:none; }
-    footer a:hover { color:var(--mint); }
-    @media (max-width:650px) {
-      .site-header,main,footer { width:calc(100% - 32px); }
-      .site-header { padding:20px 0; }
-      .brand { font-size:13px; }
-      .brand img { width:44px; }
-      main { padding:72px 0 82px; }
-      h1 { font-size:48px; }
-      .lede { margin-bottom:46px; font-size:17px; }
-      section { grid-template-columns:1fr; gap:12px; padding:26px 0; }
-      footer { align-items:flex-start; flex-direction:column; }
-    }
-  </style>
-  <style>
-    :root{--night:#201d1d;--ocean:#302c2c;--teal:#007aff;--mint:#fdfcfc;--sand:#fdfcfc;--amber:#30d158;--muted:#9a9898;--line:#646262;--max:880px;--mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace}
-    body{font:400 16px/1.5 var(--mono)}
-    :focus-visible{outline-color:var(--teal)}
-    .site-header{position:sticky;top:0;z-index:10;width:min(calc(100% - 48px),var(--max));padding:24px 0;background:var(--night);border-color:var(--line)}
-    .brand{font-size:16px;font-weight:700}.brand img{display:none}.brand::before{content:"[";color:#30d158}.brand::after{content:"]";color:#30d158}
-    .back{color:var(--sand);font-size:14px;text-decoration:underline;text-underline-offset:4px}.back:hover{color:var(--teal)}
-    main{padding:80px 0 96px}.eyebrow{display:block;margin-bottom:24px;color:#30d158;font:500 16px/1.5 var(--mono);letter-spacing:0;text-transform:none}.eyebrow::before{content:"$ ";display:inline;width:auto;height:auto;background:none;color:var(--muted)}
-    h1{max-width:720px;color:var(--sand);font-size:clamp(28px,5vw,38px);font-weight:700;letter-spacing:0;line-height:1.5}
-    .lede{margin:24px 0 64px;color:var(--muted);font-size:16px;line-height:1.5}.lede strong{color:var(--sand)}
-    .sections{border-color:var(--line)}section{grid-template-columns:200px 1fr;gap:32px;padding:32px 0;border-color:var(--line)}
-    h2{color:#30d158;font:700 16px/1.5 var(--mono);letter-spacing:0;text-transform:none}section div{color:var(--muted);font-size:16px;line-height:1.5}section strong{color:var(--sand)}
-    footer{width:min(calc(100% - 48px),var(--max));border-color:var(--line);color:var(--muted);font-size:14px}footer a{text-decoration:underline;text-underline-offset:4px}footer a:hover{color:var(--teal)}
-    @media(max-width:650px){.site-header,main,footer{width:calc(100% - 32px)}main{padding:64px 0}h1{font-size:28px}section{grid-template-columns:1fr;gap:8px}}
-  </style>
+  <link rel="stylesheet" href="assets/hermes-gold.css">
 </head>
-<body>
+<body class="policy-page">
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="Zach Vivier, home">
-      <img src="assets/zv-logo.png" alt="" width="973" height="537">
-      ZACH VIVIER
-    </a>
+    <a class="brand" href="index.html" aria-label="Zach Vivier, home">ZV / SUPPORT ENGINEERING</a>
     <a class="back" href="index.html">← Back home</a>
   </header>
 

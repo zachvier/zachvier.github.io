@@ -4,128 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Zach Vivier — technical support engineer building practical, private browser tools for investigation and troubleshooting.">
-  <meta name="theme-color" content="#201d1d">
+  <meta name="theme-color" content="#141414">
   <title>Zach Vivier — Support engineering &amp; local tools</title>
   <link rel="icon" type="image/png" href="assets/zv-logo.png">
-  <style>
-    :root {
-      --dark:#201d1d;
-      --surface:#302c2c;
-      --light:#fdfcfc;
-      --muted:#9a9898;
-      --border:#646262;
-      --blue:#007aff;
-      --green:#30d158;
-      --orange:#ff9f0a;
-      --max:880px;
-      --mono:"SFMono-Regular","Cascadia Code","Roboto Mono",Menlo,Monaco,Consolas,"Liberation Mono",monospace;
-      color-scheme:dark;
-    }
-    * { box-sizing:border-box; }
-    html { scroll-behavior:smooth; }
-    body {
-      min-height:100vh;
-      margin:0;
-      background:var(--dark);
-      color:var(--light);
-      font:400 16px/1.5 var(--mono);
-      -webkit-font-smoothing:antialiased;
-    }
-    a { color:inherit; text-underline-offset:4px; text-decoration-thickness:1px; }
-    a:hover { color:var(--blue); }
-    :focus-visible { outline:2px solid var(--blue); outline-offset:4px; }
-    .site-header {
-      position:sticky;
-      top:0;
-      z-index:10;
-      display:flex;
-      width:min(calc(100% - 48px),var(--max));
-      margin:0 auto;
-      padding:24px 0;
-      align-items:center;
-      justify-content:space-between;
-      gap:24px;
-      border-bottom:1px solid var(--border);
-      background:var(--dark);
-    }
-    .brand { color:var(--light); font-weight:700; text-decoration:none; }
-    .brand::before { content:"["; color:var(--green); }
-    .brand::after { content:"]"; color:var(--green); }
-    .nav { display:flex; align-items:center; gap:24px; }
-    .nav a { color:var(--light); font-weight:500; }
-    .nav a:hover { color:var(--blue); }
-    main { width:min(calc(100% - 48px),var(--max)); margin:0 auto; }
-    .hero { padding:96px 0 48px; }
-    .prompt { margin:0 0 24px; color:var(--green); font-weight:500; }
-    .prompt::before { content:"$ "; color:var(--muted); }
-    h1 { max-width:760px; margin:0; font-size:clamp(28px,5vw,38px); line-height:1.5; }
-    .intro { max-width:720px; margin:24px 0 0; color:var(--muted); }
-    .intro strong { color:var(--light); }
-    .hero-actions { display:flex; flex-wrap:wrap; gap:16px; margin-top:32px; }
-    .button {
-      display:inline-flex;
-      min-height:40px;
-      padding:4px 20px;
-      align-items:center;
-      border:1px solid var(--border);
-      border-radius:4px;
-      color:var(--light);
-      font-weight:500;
-      line-height:2;
-      text-decoration:none;
-      transition:color 120ms,background 120ms,border-color 120ms;
-    }
-    .button:hover { border-color:var(--blue); background:var(--surface); color:var(--light); }
-    .button.primary { border-color:var(--light); background:var(--light); color:var(--dark); }
-    .button.primary:hover { border-color:var(--blue); background:var(--blue); color:var(--light); }
-    .tools { padding:48px 0 96px; scroll-margin-top:88px; }
-    .section-label { margin:0 0 16px; color:var(--green); font-weight:500; }
-    .section-label::before { content:"// "; color:var(--muted); }
-    h2 { margin:0; font-size:16px; line-height:1.5; }
-    .section-note { max-width:720px; margin:16px 0 48px; color:var(--muted); }
-    .tool-list { margin:0; padding:0; list-style:none; }
-    .tool-item { display:grid; grid-template-columns:104px 1fr auto; gap:16px; padding:24px 0; border-top:1px solid var(--border); }
-    .tool-item:last-child { border-bottom:1px solid var(--border); }
-    .tool-number { color:var(--muted); }
-    .tool-copy h3 { margin:0; font-size:16px; }
-    .tool-copy h3 a { color:var(--light); font-weight:700; }
-    .tool-copy h3 a:hover { color:var(--blue); }
-    .tool-copy p { max-width:650px; margin:8px 0 0; color:var(--muted); }
-    .status { color:var(--green); font-size:14px; white-space:nowrap; }
-    .status.beta,.badge.beta { color:var(--orange); }
-    .badge { color:var(--orange); font-size:14px; white-space:nowrap; }
-    footer {
-      display:flex;
-      width:min(calc(100% - 48px),var(--max));
-      margin:0 auto;
-      padding:32px 0 48px;
-      align-items:center;
-      justify-content:space-between;
-      gap:24px;
-      border-top:1px solid var(--border);
-      color:var(--muted);
-      font-size:14px;
-    }
-    footer nav { display:flex; flex-wrap:wrap; gap:24px; }
-    @media (max-width:640px) {
-      .site-header,main,footer { width:calc(100% - 32px); }
-      .site-header { align-items:flex-start; padding:16px 0; }
-      .nav { flex-wrap:wrap; justify-content:flex-end; gap:8px 16px; font-size:14px; }
-      .hero { padding:64px 0 32px; }
-      .tools { padding:48px 0 64px; }
-      .tool-item { grid-template-columns:1fr; }
-      .tool-copy,.status { grid-column:1; }
-      footer { align-items:flex-start; flex-direction:column; }
-    }
-    @media (prefers-reduced-motion:reduce) {
-      html { scroll-behavior:auto; }
-      *,*::before,*::after { transition:none !important; }
-    }
-  </style>
+  <link rel="stylesheet" href="assets/hermes-gold.css">
 </head>
-<body>
+<body class="home-page">
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="Zach Vivier, home">ZV</a>
+    <a class="brand" href="#top" aria-label="Zach Vivier, home">ZV / SUPPORT ENGINEERING</a>
     <nav class="nav" aria-label="Primary navigation">
       <a href="#tools">tools</a>
       <a href="https://github.com/zachvivier" target="_blank" rel="noopener noreferrer">github</a>
@@ -135,13 +21,19 @@
 
   <main id="top">
     <section class="hero" aria-labelledby="hero-title">
-      <p class="prompt">whoami</p>
-      <h1 id="hero-title">Support engineer making complex systems legible.</h1>
-      <p class="intro">I’m Zach, a senior technical support engineer focused on enterprise security. I build <strong>practical tools for finding signal in noisy systems</strong>—without sending sensitive data anywhere.</p>
-      <div class="hero-actions">
-        <a class="button primary" href="#tools">./explore-tools</a>
-        <a class="button" href="har-viewer.html">./open-har-viewer ↗</a>
+      <div>
+        <h1 id="hero-title" class="prompt">local-first systems</h1>
+        <p class="intro">I’m Zach, a senior technical support engineer focused on enterprise security. I build <strong>practical tools for finding signal in noisy systems</strong>—without sending sensitive data anywhere.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#tools">./explore-tools</a>
+          <a class="button" href="har-viewer.html">./open-har-viewer ↗</a>
+        </div>
       </div>
+      <aside class="hero-aside" aria-label="Tooling summary">
+        <span class="aside-rule"></span>
+        <strong>Browser utility index / 04</strong>
+        <p>Open, inspect, and export diagnostic files with a clear trust boundary: the work happens in this browser tab.</p>
+      </aside>
     </section>
 
     <section class="tools" id="tools" aria-labelledby="tools-title">

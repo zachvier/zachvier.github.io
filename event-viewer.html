@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NsjrTkhhRN9bbLEcxXHOJBcyIauqv+3PlGGkPb8vMrA=' 'sha256-uRUgRYbpMRdySjdSlWhM64DMrDVn0yCWwYZOmtBv9NU='; script-src-attr 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NsjrTkhhRN9bbLEcxXHOJBcyIauqv+3PlGGkPb8vMrA=' 'sha256-CQWb4AXn8lsfyD/LUeR9OXhWxNDTTQ1ESTnOWaiwdlU='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Event Log Viewer — .evtx reader</title>
 <style>
@@ -210,6 +210,7 @@
   tbody tr.sel{box-shadow:inset 2px 0 0 var(--info)}
   @media(max-width:640px){.card{padding:24px 20px}}
 </style>
+<link rel="stylesheet" href="assets/hermes-gold.css">
 </head>
 <body>
 
@@ -1279,7 +1280,7 @@ const EVTX = (function () {
     if (b) setTheme(theme === 'dark' ? 'light' : 'dark');
   });
   try {
-    setTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme('dark');
   } catch (e) { setTheme('dark'); }
 
   // ------------------------------------------------------------- upload ---

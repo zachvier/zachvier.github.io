@@ -57,7 +57,7 @@ test('diagnostic pages enforce a strict hash-based meta CSP before active conten
     assert.deepEqual(policy.get('object-src'), ["'none'"], `${page}: object-src`);
     assert.deepEqual(policy.get('base-uri'), ["'none'"], `${page}: base-uri`);
     assert.deepEqual(policy.get('form-action'), ["'none'"], `${page}: form-action`);
-    assert.deepEqual(policy.get('style-src'), ["'unsafe-inline'"], `${page}: inline styles are intentional`);
+    assert.deepEqual(policy.get('style-src'), ["'self'", "'unsafe-inline'"], `${page}: only same-origin and intentional inline styles are allowed`);
     assert.deepEqual(policy.get('img-src'), ["'self'", 'data:'], `${page}: local and data images only`);
 
     const scriptPolicy = policy.get('script-src') || [];
