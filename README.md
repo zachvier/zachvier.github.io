@@ -184,7 +184,7 @@ mail-analyzer.html       Mail Header Analyzer interface
 mail-analyzer-core.js    Mail parsing and analysis logic
 cert-inspector.html      Certificate Inspector interface
 cert-inspector-core.js   X.509 and public-key parsing logic
-assets/                  Site assets
+assets/                  Site assets and shared Ghostty Site stylesheet
 tests/                   Tool tests and safe fixtures
 .gitattributes           Disables text conversion and diffs for .eml fixtures
 CNAME                    GitHub Pages custom domain
