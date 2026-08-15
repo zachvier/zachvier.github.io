@@ -3,74 +3,199 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Zach Vivier — technical support engineer building practical, private browser tools for investigation and troubleshooting.">
-  <meta name="theme-color" content="#0F0F11">
-  <title>Zach Vivier — Support engineering &amp; local tools</title>
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64x64.png">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.json">
-  <meta name="msapplication-TileColor" content="#0F0F11">
-  <link rel="stylesheet" href="assets/ghostty-site.css">
+  <meta name="description" content="Zach Vivier — technical support engineer and technical writer.">
+  <meta name="theme-color" content="#15191c">
+  <title>Zach Vivier — Technical Support &amp; Writing</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #15191c;
+      --surface: #1d2228;
+      --border: #303740;
+      --text: #d9dde3;
+      --muted: #b9bec7;
+      --link: #82b2f2;
+      --link-hover: #a9caff;
+      --focus: #b8d5ff;
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --background: #f6f8fa;
+      --surface: #ffffff;
+      --border: #d0d7de;
+      --text: #24292f;
+      --muted: #57606a;
+      --link: #0969da;
+      --link-hover: #0550ae;
+      --focus: #0969da;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--background);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      transition: background-color 160ms ease, color 160ms ease;
+    }
+
+    .page {
+      width: 100%;
+      padding: 52px 16px;
+    }
+
+    .masthead {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    h1 {
+      min-width: 0;
+      margin: 9px 0 0;
+      font-size: clamp(1.25rem, 2vw, 2rem);
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+
+    .theme-toggle {
+      min-width: 108px;
+      min-height: 60px;
+      padding: 10px 17px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: clamp(1.125rem, 1.65vw, 1.625rem);
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--muted);
+    }
+
+    main {
+      margin-top: 39px;
+    }
+
+    .role {
+      margin: 0 0 28px;
+      color: var(--text);
+      font-size: clamp(1.125rem, 1.65vw, 1.625rem);
+      line-height: 1.35;
+    }
+
+    .profiles {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 13px;
+    }
+
+    a {
+      color: var(--link);
+      font-size: clamp(1.125rem, 1.65vw, 1.625rem);
+      line-height: 1.35;
+      text-underline-offset: 0.12em;
+      text-decoration-thickness: 1px;
+      transition: color 120ms ease;
+    }
+
+    a:hover {
+      color: var(--link-hover);
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 4px;
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        padding: 24px 18px;
+      }
+
+      .masthead {
+        gap: 12px;
+      }
+
+      h1 {
+        margin-top: 7px;
+      }
+
+      .theme-toggle {
+        min-width: auto;
+        min-height: 44px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        font-size: 1rem;
+      }
+
+      main {
+        margin-top: 48px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body,
+      .theme-toggle,
+      a {
+        transition: none;
+      }
+    }
+  </style>
 </head>
-<body class="home-page">
-  <header class="site-header">
-    <a class="brand" href="#top" aria-label="Zach Vivier, home">Zach Vivier <span class="brand-meta">Support engineering</span></a>
-    <nav class="nav" aria-label="Primary navigation">
-      <a href="#tools">Tools</a>
-      <a href="https://github.com/zachvivier" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <a class="nav-cta" href="mailto:site@zachvivier.com">Contact</a>
-    </nav>
-  </header>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <h1>Directory: /zachvivier/</h1>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme">Light</button>
+    </header>
 
-  <main id="top">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-grid">
-        <div>
-          <p class="eyebrow">Local-first systems</p>
-          <h1 id="hero-title">Support engineering for <span class="quiet">noisy systems.</span></h1>
-          <p class="intro">I’m Zach, a senior technical support engineer focused on enterprise security. I build <strong>practical tools that find signal without exporting sensitive data.</strong></p>
-          <div class="hero-actions">
-            <a class="button primary" href="#tools">Explore the tools <span aria-hidden="true">↓</span></a>
-            <a class="button" href="har-viewer.html">Open HAR Viewer <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
+    <main>
+      <p class="role">Technical support engineer and technical writer.</p>
+      <nav class="profiles" aria-label="Profiles">
+        <a href="https://github.com/zachvivier">GitHub/</a>
+        <a href="https://www.linkedin.com/in/zachvivier/">LinkedIn/</a>
+      </nav>
+    </main>
+  </div>
 
-        <aside aria-label="Local processing summary">
-          <div class="trust-panel">
-            <div class="trust-head"><span>Trust boundary</span><span>Browser local</span></div>
-            <div class="trust-body"><h2>Your files stay in this tab.</h2><p>Open, inspect, and export diagnostic files without accounts, telemetry, or a server-side processing step.</p></div>
-          </div>
-          <div class="availability" aria-label="Site characteristics">
-            <div><strong>04</strong><span>Utilities</span></div>
-            <div><strong>0</strong><span>Uploads</span></div>
-            <div><strong>0</strong><span>Trackers</span></div>
-          </div>
-        </aside>
-      </div>
-    </section>
+  <script>
+    const root = document.documentElement;
+    const toggle = document.getElementById('theme-toggle');
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    let isLightTheme = false;
 
-    <section class="tools" id="tools" aria-labelledby="tools-title">
-      <div class="section-headline">
-        <div><p class="section-kicker">Browser-based utilities</p><h2 id="tools-title">Tools that stay put.</h2></div>
-        <p class="section-note">Diagnostic files are processed by JavaScript running in your browser. Review all output before sharing it.</p>
-      </div>
-      <div class="utility-grid">
-        <a class="utility-card" href="har-viewer.html"><div class="card-meta"><span class="status-dot"></span><span>Available · UTILITY / 01</span></div><h3>HAR Viewer</h3><p>Inspect requests and responses, filter timelines, mask credentials, and export focused results.</p><span class="filetypes">.HAR · .JSON</span></a>
-        <a class="utility-card" href="event-viewer.html"><div class="card-meta"><span class="status-dot"></span><span>Available · UTILITY / 02</span></div><h3>Event Log Viewer</h3><p>Read Windows event logs, filter records, inspect raw XML, mask fields, and export results.</p><span class="filetypes">.EVTX</span></a>
-        <a class="utility-card beta" href="mail-analyzer.html"><div class="card-meta"><span class="status-dot"></span><span>UTILITY / 03</span><span class="badge beta">Beta</span></div><h3>Mail Header Analyzer</h3><p>Check raw messages for malformed headers, MIME problems, authentication claims, and suspicious hop timing.</p><span class="filetypes">.EML · .TXT</span></a>
-        <a class="utility-card" href="cert-inspector.html"><div class="card-meta"><span class="status-dot"></span><span>Available · UTILITY / 04</span></div><h3>Certificate Inspector</h3><p>Read X.509 certificates and public keys, inspect extensions and fingerprints, and compare key material visually.</p><span class="filetypes">.PEM · .CRT · .CER · .DER</span></a>
-      </div>
-    </section>
-  </main>
+    const setTheme = (useLightTheme) => {
+      root.dataset.theme = useLightTheme ? 'light' : 'dark';
+      toggle.textContent = useLightTheme ? 'Dark' : 'Light';
+      toggle.setAttribute('aria-label', `Switch to ${useLightTheme ? 'dark' : 'light'} theme`);
+      themeColor.content = useLightTheme ? '#f6f8fa' : '#15191c';
+    };
 
-  <footer>
-    <span>© <span id="year"></span> Zach Vivier</span>
-    <nav aria-label="Footer navigation"><a href="privacy.html">Privacy &amp; usage</a><a href="https://github.com/zachvivier/zachvivier.github.io" target="_blank" rel="noopener noreferrer">Source</a><a href="mailto:site@zachvivier.com">Email</a></nav>
-  </footer>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+    toggle.addEventListener('click', () => {
+      isLightTheme = !isLightTheme;
+      setTheme(isLightTheme);
+    });
+
+    setTheme(isLightTheme);
+  </script>
 </body>
 </html>

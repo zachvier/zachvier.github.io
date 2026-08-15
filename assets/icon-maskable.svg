@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
-  <title id="title">ZV blue tile maskable icon</title>
-  <desc id="desc">White geometric ZV monogram kept inside the maskable safe zone on Ghostty brand blue.</desc>
-  <rect width="1024" height="1024" fill="#3551F3"/>
-  <g transform="translate(92.16 92.16) scale(.82)">
-    <path fill="#F0F0F4" d="M180 270H470V382L320 642H482V754H164V642L316 382H180Z"/>
-    <path fill="#F0F0F4" d="M510 270H642L720 615L798 270H930L790 754H650Z"/>
-  </g>
-</svg>
