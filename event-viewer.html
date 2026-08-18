@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-NsjrTkhhRN9bbLEcxXHOJBcyIauqv+3PlGGkPb8vMrA=' 'sha256-uRUgRYbpMRdySjdSlWhM64DMrDVn0yCWwYZOmtBv9NU='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Log Viewer — .evtx reader</title>
+<style>
+  :root {
+    /* palette: 001219 005f73 0a9396 94d2bd e9d8a6 ee9b00 ca6702 bb3e03 ae2012 9b2226 */
+    --bg:#001219; --surface:#052832; --surface2:#073844; --surface3:#0A4954;
+    --border:rgba(148,210,189,0.18); --border2:rgba(148,210,189,0.32);
+    --text:#E9D8A6; --text-mid:#B9CDBD; --text-muted:#789B91;
+    --ok:#94D2BD; --ok-dim:rgba(148,210,189,0.13);
+    --warn:#EE9B00; --warn-dim:rgba(238,155,0,0.15);
+    --err:#AE2012; --err-dim:rgba(174,32,18,0.22);
+    --info:#D7834B; --info-dim:rgba(215,131,75,0.18);
+    --alt:#CA6702; --alt-dim:rgba(202,103,2,0.16);
+    --mono:'SF Mono','Geist Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Geist','Segoe UI',Helvetica,Arial,sans-serif;
+    /* themed surfaces and accents */
+    --bar-bg:#001219;
+    --row-line:rgba(148,210,189,0.07);
+    --row-hover:rgba(148,210,189,0.05);
+    --sel-line:rgba(148,210,189,0.08);
+    --mark-bg:rgba(233,216,166,0.30);
+    --info-text:#94D2BD;
+    --err-text:#F08A73;
+    --ok-text:#94D2BD;
+    --accent:var(--ok);
+    --scroll:#D7834B; --scroll-hi:#D7834B;
+    --shadow:0 8px 40px rgba(0,18,25,0.58);
+    --xtag:#94D2BD; --xatt:#D7834B; --xval:#EE9B00;
+    color-scheme:dark;
+  }
+  :root[data-theme="light"] {
+    --bg:#F8F1DC; --surface:#FFF9E9; --surface2:#EFE3BF; --surface3:#E9D8A6;
+    --border:rgba(215,131,75,0.18); --border2:rgba(215,131,75,0.34);
+    --text:#001219; --text-mid:#244C50; --text-muted:#577678;
+    --ok:#D7834B; --ok-dim:rgba(215,131,75,0.10);
+    --warn:#CA6702; --warn-dim:rgba(202,103,2,0.14);
+    --err:#9B2226; --err-dim:rgba(155,34,38,0.12);
+    --info:#D7834B; --info-dim:rgba(215,131,75,0.12);
+    --alt:#BB3E03; --alt-dim:rgba(187,62,3,0.11);
+    --bar-bg:#FFF9E9;
+    --row-line:rgba(0,18,25,0.08);
+    --row-hover:rgba(0,18,25,0.04);
+    --sel-line:rgba(0,18,25,0.09);
+    --mark-bg:rgba(238,155,0,0.40);
+    --info-text:#D7834B;
+    --err-text:#9B2226;
+    --ok-text:#D7834B;
+    --accent:#D7834B;
+    --scroll:#94D2BD; --scroll-hi:#D7834B;
+    --shadow:0 8px 32px rgba(0,18,25,0.12);
+    --xtag:#D7834B; --xatt:#0A6E65; --xval:#CA6702;
+    color-scheme:light;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; -webkit-font-smoothing:antialiased; overflow:hidden; }
+  button { font-family:inherit; font-size:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--scroll); border-radius:5px; border:2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background:var(--scroll-hi); }
+  :focus-visible { outline:2px solid var(--info); outline-offset:2px; }
+
+  /* ---------- upload ---------- */
+  #upload { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding:32px 20px; overflow:auto; }
+  .mark { flex:0 0 auto; display:flex; align-items:center; gap:12px; margin-top:auto; margin-bottom:40px; }
+  .mark-bar { width:5px; height:38px; background:var(--accent); border-radius:3px; }
+  .mark-t { font-size:19px; font-weight:800; letter-spacing:-0.3px; line-height:1.1; }
+  .mark-t span { display:block; font-size:10.5px; font-weight:600; color:var(--text-muted); letter-spacing:1.6px; text-transform:uppercase; margin-top:3px; }
+  .card { flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:44px 48px; width:100%; max-width:600px; margin-bottom:auto; position:relative; overflow:hidden; box-shadow:var(--shadow); }
+  .card::before { content:''; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg,var(--accent),var(--info)); }
+  .card h1 { font-size:23px; font-weight:800; letter-spacing:-0.4px; margin-bottom:8px; }
+  .card .lede { color:var(--text-muted); line-height:1.6; margin-bottom:30px; }
+  .drop { border:2px dashed var(--border2); border-radius:12px; padding:40px 24px; text-align:center; cursor:pointer; transition:.15s; position:relative; background:var(--bg); }
+  .drop:hover,.drop.over { border-color:var(--info); background:var(--info-dim); }
+  .drop input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+  .drop h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
+  .drop p { color:var(--text-muted); font-size:12px; }
+  .ext { display:inline-block; margin-top:12px; font-family:var(--mono); font-size:11px; color:var(--ok); border:1px solid var(--ok); background:var(--ok-dim); padding:2px 9px; border-radius:4px; }
+  .note { margin-top:26px; padding-top:20px; border-top:1px solid var(--border); color:var(--text-muted); font-size:12px; line-height:1.65; }
+  .note strong { color:var(--text-mid); font-weight:600; }
+  .theme-fab { position:fixed; top:16px; right:16px; z-index:20; background:var(--surface); border:1px solid var(--border2); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:500; color:var(--text-mid); }
+  .theme-fab:hover { background:var(--surface2); color:var(--text); }
+  .home-link { position:fixed; top:16px; left:16px; z-index:20; color:var(--text-muted); font-size:12px; font-weight:600; text-decoration:none; }
+  .home-link:hover { color:var(--ok); }
+  #err { display:none; margin-top:16px; background:var(--err-dim); border:1px solid rgba(174,32,18,0.4); color:var(--err-text); border-radius:8px; padding:10px 14px; font-size:12.5px; }
+  #busy { display:none; margin-top:20px; color:var(--text-mid); font-size:12.5px; font-family:var(--mono); }
+
+  /* ---------- shell ---------- */
+  #app { display:none; height:100vh; flex-direction:column; }
+  .bar { height:52px; flex:0 0 auto; display:flex; align-items:center; gap:16px; padding:0 16px; background:var(--bar-bg); border-bottom:1px solid var(--border); }
+  .bar-home { flex:0 0 auto; color:var(--text-muted); font-size:20px; line-height:1; text-decoration:none; }
+  .bar-home:hover { color:var(--ok); }
+  .bar-mark { display:flex; align-items:center; gap:9px; font-weight:800; font-size:14.5px; letter-spacing:-0.2px; white-space:nowrap; }
+  .bar-mark::before { content:''; width:4px; height:22px; background:var(--accent); border-radius:2px; }
+  .bar-files { display:flex; gap:6px; overflow:auto; flex:1; }
+  .chip { flex:0 0 auto; display:flex; align-items:center; gap:7px; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:4px 8px; font-family:var(--mono); font-size:11px; color:var(--text-mid); }
+  .chip b { color:var(--text); font-weight:500; }
+  .chip .x { color:var(--text-muted); padding:0 2px; }
+  .chip .x:hover { color:var(--err-text); }
+  .btn { background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:500; color:var(--text-mid); transition:.12s; white-space:nowrap; }
+  .btn:hover { background:var(--surface3); color:var(--text); border-color:var(--border2); }
+  .btn.on { background:var(--info-dim); border-color:var(--info); color:var(--info-text); }
+  .btn.warnon { background:var(--warn-dim); border-color:var(--warn); color:var(--warn); }
+  .bar-right { display:flex; gap:7px; align-items:center; }
+
+  /* ---------- stats + timeline ---------- */
+  .head { flex:0 0 auto; padding:14px 16px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr)); gap:8px; margin-bottom:12px; }
+  .stat { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:9px 11px; }
+  .stat .k { font-size:9.5px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-muted); font-weight:600; margin-bottom:4px; }
+  .stat .v { font-size:19px; font-weight:700; font-family:var(--mono); letter-spacing:-0.5px; line-height:1.1; }
+  .stat .s { font-size:10.5px; color:var(--text-muted); margin-top:3px; font-family:var(--mono); }
+  .stat.err .v { color:var(--err-text); } .stat.warn .v { color:var(--warn); } .stat.ok .v { color:var(--ok); }
+  .tl-wrap { position:relative; }
+  .tl-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  .tl-head .lab { font-size:9.5px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-muted); font-weight:600; }
+  .tl-head .rng { font-family:var(--mono); font-size:10.5px; color:var(--text-muted); }
+  .tl-head .rng b { color:var(--info); font-weight:500; }
+  #tl { width:100%; height:64px; display:block; cursor:crosshair; user-select:none; }
+  #tl rect.b { transition:opacity .1s; }
+  #tl:hover rect.b { opacity:.85; }
+
+  /* ---------- filters ---------- */
+  .filters { flex:0 0 auto; display:flex; gap:8px; align-items:center; padding:9px 16px; border-bottom:1px solid var(--border); background:var(--surface2); flex-wrap:wrap; }
+  .search { flex:1; min-width:200px; position:relative; }
+  .search input { width:100%; background:var(--bg); border:1px solid var(--border2); border-radius:6px; padding:7px 11px 7px 30px; color:var(--text); font-family:var(--sans); font-size:12.5px; }
+  .search input:focus { outline:none; border-color:var(--info); }
+  .search::before { content:'⌕'; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:15px; }
+  select { background:var(--bg); border:1px solid var(--border2); border-radius:6px; padding:7px 9px; color:var(--text-mid); font-family:var(--sans); font-size:12px; max-width:230px; }
+  select:focus { outline:none; border-color:var(--info); }
+  .lvls { display:flex; gap:4px; }
+  .lvl { border:1px solid var(--border2); border-radius:6px; padding:6px 10px; font-size:11.5px; font-weight:600; color:var(--text-muted); background:var(--bg); }
+  .lvl.on[data-l="crit"],.lvl.on[data-l="err"] { background:var(--err-dim); border-color:var(--err); color:var(--err-text); }
+  .lvl.on[data-l="warn"] { background:var(--warn-dim); border-color:var(--warn); color:var(--warn); }
+  .lvl.on[data-l="info"] { background:var(--ok-dim); border-color:var(--ok); color:var(--ok-text); }
+  .lvl.on[data-l="verb"] { background:var(--alt-dim); border-color:var(--alt); color:var(--alt); }
+
+  /* ---------- split ---------- */
+  .split { flex:1; display:flex; min-height:0; }
+  .list { flex:1; min-width:0; overflow:auto; }
+  .detail { width:44%; min-width:330px; max-width:760px; border-left:1px solid var(--border); background:var(--surface); display:flex; flex-direction:column; overflow:hidden; }
+  .grip { width:5px; cursor:col-resize; background:var(--border); flex:0 0 auto; }
+  .grip:hover { background:var(--info); }
+
+  table { width:100%; border-collapse:collapse; }
+  thead th { position:sticky; top:0; z-index:5; background:var(--surface2); text-align:left; font-size:9.5px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); font-weight:700; padding:8px 10px; border-bottom:1px solid var(--border2); cursor:pointer; white-space:nowrap; }
+  thead th:hover { color:var(--text); }
+  thead th .ar { color:var(--info); }
+  tbody tr { border-bottom:1px solid var(--row-line); cursor:pointer; }
+  tbody tr:hover { background:var(--row-hover); }
+  tbody tr.sel { background:var(--info-dim); box-shadow:inset 2px 0 0 var(--info); }
+  tbody td { padding:7px 10px; vertical-align:top; font-size:12px; }
+  td.t { font-family:var(--mono); font-size:11px; color:var(--text-mid); white-space:nowrap; }
+  td.id { font-family:var(--mono); font-size:11.5px; color:var(--text); white-space:nowrap; }
+  td.p { color:var(--text-mid); white-space:nowrap; max-width:210px; overflow:hidden; text-overflow:ellipsis; }
+  td.sum { color:var(--text-muted); font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:0; }
+  .pill { display:inline-block; padding:1.5px 7px; border-radius:4px; font-size:10px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; white-space:nowrap; }
+  .pill.crit,.pill.err { background:var(--err-dim); color:var(--err-text); }
+  .pill.warn { background:var(--warn-dim); color:var(--warn); }
+  .pill.info { background:var(--ok-dim); color:var(--ok-text); }
+  .pill.verb { background:var(--alt-dim); color:var(--alt); }
+  .empty { padding:60px 20px; text-align:center; color:var(--text-muted); }
+  #more { padding:11px; text-align:center; color:var(--text-muted); font-size:11.5px; font-family:var(--mono); }
+
+  /* ---------- detail ---------- */
+  .d-head { flex:0 0 auto; padding:14px 16px; border-bottom:1px solid var(--border); }
+  .d-head .l1 { display:flex; align-items:center; gap:9px; margin-bottom:7px; flex-wrap:wrap; }
+  .d-head h2 { font-size:15px; font-weight:700; letter-spacing:-0.2px; }
+  .d-head .l2 { font-family:var(--mono); font-size:11px; color:var(--text-muted); line-height:1.7; }
+  .tabs { flex:0 0 auto; display:flex; gap:2px; padding:0 12px; border-bottom:1px solid var(--border); background:var(--surface2); }
+  .tab { padding:8px 13px; font-size:11.5px; font-weight:600; color:var(--text-muted); border-bottom:2px solid transparent; }
+  .tab.on { color:var(--text); border-bottom-color:var(--accent); }
+  .d-body { flex:1; overflow:auto; padding:14px 16px; }
+  .kv { width:100%; border-collapse:collapse; }
+  .kv td { padding:6px 8px; vertical-align:top; border-bottom:1px solid var(--sel-line); font-size:12px; }
+  .kv td.k { width:34%; color:var(--text-muted); font-family:var(--mono); font-size:11px; white-space:nowrap; }
+  .kv td.v { color:var(--text); font-family:var(--mono); font-size:11.5px; word-break:break-word; white-space:pre-wrap; }
+  .kv tr.hi td.k { color:var(--warn); }
+  .sec-lab { font-size:9.5px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-muted); font-weight:700; margin:16px 0 6px; }
+  .sec-lab:first-child { margin-top:0; }
+  pre.xml { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:var(--mono); font-size:11px; line-height:1.55; color:var(--text-mid); white-space:pre-wrap; word-break:break-word; }
+  .xtag { color:var(--xtag); } .xatt { color:var(--xatt); } .xval { color:var(--xval); }
+  .hint { background:var(--surface2); border:1px solid var(--border2); border-left:3px solid var(--info); border-radius:6px; padding:10px 12px; color:var(--text-muted); font-size:11.5px; line-height:1.6; margin-bottom:14px; }
+  .none { color:var(--text-muted); font-size:12px; padding:8px 0; }
+  mark { background:var(--mark-bg); color:var(--text); border-radius:2px; }
+  @media (max-width:900px) {
+    #app { width:100vw; max-width:100vw; overflow:hidden; }
+    .bar { overflow-x:auto; overflow-y:hidden; }
+    .bar-files,.bar-right { flex:0 0 auto; }
+    .detail { position:fixed; inset:52px 0 0 0; width:100%; max-width:none; z-index:50; }
+    .grip { display:none; }
+  }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+  <link rel="stylesheet" href="tools.css?v=13">
+</head>
+<body>
+
+<div id="upload">
+  <a class="home-link" href="index.html">← zachvivier.com</a>
+  <button class="theme-fab" data-theme-toggle>Light</button>
+  <div class="mark"><div class="mark-bar"></div><div class="mark-t">Event Log Viewer<span>Windows .evtx · runs locally</span></div></div>
+  <div class="card">
+    <h1>Open a Windows event log</h1>
+    <p class="lede">Reads <code>.evtx</code> files natively in this page. Nothing is uploaded, no network calls, no Windows required.</p>
+    <div class="drop" id="drop">
+      <input type="file" id="file" accept=".evtx" multiple>
+      <h3>Drop .evtx files here</h3>
+      <p>or click to browse — several files can be merged into one timeline</p>
+      <span class="ext">.evtx</span>
+    </div>
+    <div id="err"></div>
+    <div id="busy">Parsing…</div>
+    <div class="note">
+      <strong>Export from Windows:</strong> Event Viewer → right-click the log → <em>Save All Events As…</em> → keep the <code>.evtx</code> format, then copy it to whichever machine you are reading it on.<br><br>
+      <strong>What you get:</strong> every field Windows stores in the record — provider, event ID, level, timestamps, process and thread IDs, user SID, and all event data — plus the raw XML.<br><br>
+      <strong>An event log identifies people and machines.</strong> Account names, SIDs, the computer name, client addresses, and full command lines are all recorded verbatim, and command lines and script blocks sometimes carry passwords. <code>Mask</code> hides the values of those named fields everywhere they appear — the list, the detail pane, the XML, and both exports. Domain SIDs and the account segment of user-profile paths go wherever they appear. It is a strong best effort rather than a guarantee: some providers park account names in positional fields like <code>param7</code>, which no name list can anticipate, so read a record before sharing it.<br><br>
+      <strong>What is missing:</strong> the rendered description text. Windows builds that at display time from the provider's message DLL, which lives on the machine that wrote the log, so it is not inside the file. Event data fields carry the same information.
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="bar">
+    <a class="bar-home" href="index.html" aria-label="Back to zachvivier.com" title="Back to zachvivier.com">← zachvivier.com</a>
+    <a class="bar-mark" href="index.html" style="color:inherit;text-decoration:none" title="Back to zachvivier.com">Event Log Viewer</a>
+    <div class="bar-files" id="chips"></div>
+    <div class="bar-right">
+      <button class="btn" data-theme-toggle title="Switch between dark and light">Light</button>
+      <button class="btn" id="tzBtn" title="Switch between local time and UTC">Local</button>
+      <button class="btn" id="maskBtn" title="Hide account, address, and credential values">Mask</button>
+      <button class="btn" id="csvBtn">CSV</button>
+      <button class="btn" id="jsonBtn">JSON</button>
+      <button class="btn" id="addBtn">Add file</button>
+      <input type="file" id="file2" accept=".evtx" multiple hidden>
+    </div>
+  </div>
+
+  <div class="head">
+    <div class="stats" id="stats"></div>
+    <div class="tl-wrap">
+      <div class="tl-head">
+        <span class="lab">Activity</span>
+        <span class="rng" id="tlRange"></span>
+      </div>
+      <svg id="tl" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="search"><input id="q" type="search" placeholder="Search all fields and XML…  (press / to focus)"></div>
+    <div class="lvls" id="lvls">
+      <button class="lvl on" data-l="crit">Critical</button>
+      <button class="lvl on" data-l="err">Error</button>
+      <button class="lvl on" data-l="warn">Warning</button>
+      <button class="lvl on" data-l="info">Info</button>
+      <button class="lvl on" data-l="verb">Verbose</button>
+    </div>
+    <select id="prov"><option value="">All providers</option></select>
+    <select id="eid"><option value="">All event IDs</option></select>
+    <button class="btn" id="clr">Reset</button>
+  </div>
+
+  <div class="split">
+    <div class="list" id="list">
+      <table>
+        <thead><tr>
+          <th data-s="timeMs" style="width:170px">Time</th>
+          <th data-s="levelRank" style="width:96px">Level</th>
+          <th data-s="eventIdNum" style="width:84px">Event ID</th>
+          <th data-s="provider">Source</th>
+          <th data-s="computer" style="width:150px">Computer</th>
+          <th>Event data</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="more"></div>
+    </div>
+    <div class="grip" id="grip"></div>
+    <div class="detail" id="detail">
+      <div class="d-head"><div class="l1"><h2 id="dTitle">No event selected</h2></div><div class="l2" id="dMeta">Pick a row to see everything the record contains.</div></div>
+      <div class="tabs"><button class="tab on" data-t="gen">General</button><button class="tab" data-t="sys">System</button><button class="tab" data-t="xml">XML</button></div>
+      <div class="d-body" id="dBody"><div class="none">Nothing selected.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* EVTX (Windows XML Event Log) parser - pure JS, no dependencies.
+   Format reference: libyal/libevtx documentation. */
+
+const EVTX = (function () {
+  const FILE_MAGIC = 'ElfFile\0';
+  const CHUNK_MAGIC = 'ElfChnk\0';
+  const REC_MAGIC = 0x00002a2a;
+  const CHUNK_SIZE = 0x10000;
+
+  const utf16 = new TextDecoder('utf-16le');
+  const utf8 = new TextDecoder('utf-8');
+
+  function ascii(u8, off, len) {
+    let s = '';
+    for (let i = 0; i < len; i++) s += String.fromCharCode(u8[off + i]);
+    return s;
+  }
+  function xmlEscape(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function trimNulls(s) { return s.replace(/\0+$/, ''); }
+  function hex(n, w) { return '0x' + n.toString(16).padStart(w, '0'); }
+
+  // FILETIME (100ns since 1601-01-01) -> JS ms epoch
+  function filetimeToMs(bi) {
+    return Number(bi / 10000n) - 11644473600000;
+  }
+  function isoFromFiletime(bi) {
+    if (bi === 0n) return '';
+    const ms = filetimeToMs(bi);
+    if (!isFinite(ms) || ms < -62135596800000 || ms > 253402300799999) return '';
+    const d = new Date(ms);
+    const sub = (bi % 10000000n).toString().padStart(7, '0');
+    return d.toISOString().slice(0, 19) + '.' + sub + 'Z';
+  }
+
+  function guidStr(u8, o) {
+    const dv = new DataView(u8.buffer, u8.byteOffset + o, 16);
+    const h = (n, w) => n.toString(16).padStart(w, '0');
+    let s = h(dv.getUint32(0, true), 8) + '-' + h(dv.getUint16(4, true), 4) + '-' +
+      h(dv.getUint16(6, true), 4) + '-';
+    for (let i = 8; i < 10; i++) s += h(u8[o + i], 2);
+    s += '-';
+    for (let i = 10; i < 16; i++) s += h(u8[o + i], 2);
+    return '{' + s + '}';
+  }
+
+  function sidStr(u8, o, size) {
+    const dv = new DataView(u8.buffer, u8.byteOffset);
+    const rev = u8[o];
+    const subCount = u8[o + 1];
+    let auth = 0n;
+    for (let i = 0; i < 6; i++) auth = (auth << 8n) | BigInt(u8[o + 2 + i]);
+    let s = 'S-' + rev + '-' + auth.toString();
+    const max = Math.min(subCount, Math.floor((size - 8) / 4));
+    for (let i = 0; i < max; i++) s += '-' + dv.getUint32(o + 8 + i * 4, true);
+    return s;
+  }
+
+  function systemtimeStr(u8, o) {
+    const dv = new DataView(u8.buffer, u8.byteOffset + o, 16);
+    const g = i => dv.getUint16(i * 2, true);
+    const p = (n, w) => String(n).padStart(w, '0');
+    return `${p(g(0), 4)}-${p(g(1), 2)}-${p(g(3), 2)}T${p(g(4), 2)}:${p(g(5), 2)}:${p(g(6), 2)}.${p(g(7), 3)}Z`;
+  }
+
+  // ---------------------------------------------------------------- chunk ---
+  function ChunkReader(u8, chunkStart) {
+    this.u8 = u8;
+    this.dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    this.cs = chunkStart;
+    this.names = new Map();
+  }
+
+  ChunkReader.prototype.readName = function (rel) {
+    if (this.names.has(rel)) return this.names.get(rel);
+    const o = this.cs + rel;
+    const nchar = this.dv.getUint16(o + 6, true);
+    const str = utf16.decode(this.u8.subarray(o + 8, o + 8 + nchar * 2));
+    this.names.set(rel, str);
+    return str;
+  };
+
+  // Reads a name that may be stored inline at cursor position.
+  ChunkReader.prototype.nameAt = function (cur) {
+    const rel = this.dv.getUint32(cur.p, true);
+    cur.p += 4;
+    const inlineRel = cur.p - this.cs;
+    const name = this.readName(rel);
+    if (rel === inlineRel) {
+      const nchar = this.dv.getUint16(cur.p + 6, true);
+      cur.p += 8 + nchar * 2 + 2; // struct + string + null terminator
+    }
+    return name;
+  };
+
+  // -------------------------------------------------------------- values ---
+  // Returns string, or array of strings for array types.
+  ChunkReader.prototype.value = function (type, off, size) {
+    const dv = this.dv, u8 = this.u8;
+    if (size === 0 && type !== 0x00) return '';
+    switch (type) {
+      case 0x00: return '';
+      case 0x01: return trimNulls(utf16.decode(u8.subarray(off, off + size)));
+      case 0x02: return trimNulls(utf8.decode(u8.subarray(off, off + size)));
+      case 0x03: return String(dv.getInt8(off));
+      case 0x04: return String(dv.getUint8(off));
+      case 0x05: return String(dv.getInt16(off, true));
+      case 0x06: return String(dv.getUint16(off, true));
+      case 0x07: return String(dv.getInt32(off, true));
+      case 0x08: return String(dv.getUint32(off, true));
+      case 0x09: return dv.getBigInt64(off, true).toString();
+      case 0x0a: return dv.getBigUint64(off, true).toString();
+      case 0x0b: return String(dv.getFloat32(off, true));
+      case 0x0c: return String(dv.getFloat64(off, true));
+      case 0x0d: return dv.getUint32(off, true) !== 0 ? 'true' : 'false';
+      case 0x0e: { // binary
+        let s = '';
+        for (let i = 0; i < size; i++) s += u8[off + i].toString(16).padStart(2, '0').toUpperCase();
+        return s;
+      }
+      case 0x0f: return size >= 16 ? guidStr(u8, off) : '';
+      case 0x10: return size === 8 ? hex(Number(dv.getBigUint64(off, true)), 16) : hex(dv.getUint32(off, true), 8);
+      case 0x11: return isoFromFiletime(dv.getBigUint64(off, true));
+      case 0x12: return systemtimeStr(u8, off);
+      case 0x13: return size >= 8 ? sidStr(u8, off, size) : '';
+      case 0x14: return hex(dv.getUint32(off, true), 8);
+      case 0x15: return '0x' + dv.getBigUint64(off, true).toString(16).padStart(16, '0');
+      case 0x21: { // embedded BinXml
+        const cur = { p: off, end: off + size };
+        return this.fragment(cur, null);
+      }
+      case 0x81: { // array of unicode strings
+        const raw = utf16.decode(u8.subarray(off, off + size));
+        const parts = raw.split('\0');
+        if (parts.length && parts[parts.length - 1] === '') parts.pop();
+        return parts;
+      }
+      case 0x86: case 0x87: case 0x88: case 0x89: case 0x8a: case 0x8f:
+      case 0x94: case 0x95: case 0x91: {
+        const base = type & 0x7f;
+        const w = { 0x06: 2, 0x07: 4, 0x08: 4, 0x09: 8, 0x0a: 8, 0x0f: 16, 0x11: 8, 0x14: 4, 0x15: 8 }[base] || size;
+        const out = [];
+        for (let i = 0; i + w <= size; i += w) out.push(this.value(base, off + i, w));
+        return out;
+      }
+      default: {
+        let s = '';
+        for (let i = 0; i < size; i++) s += u8[off + i].toString(16).padStart(2, '0');
+        return s;
+      }
+    }
+  };
+
+  function flat(v) { return Array.isArray(v) ? v.join('\n') : v; }
+
+  // -------------------------------------------------------------- binxml ---
+  // subs: array of {type, off, size} or null
+  ChunkReader.prototype.fragment = function (cur, subs) {
+    let out = '';
+    const limit = cur.end;
+    while (cur.p < limit) {
+      const tok = this.u8[cur.p] & 0x0f;
+      if (tok === 0x00) { cur.p += 1; break; }
+      if (tok === 0x0f) { cur.p += 4; continue; }          // fragment header
+      if (tok === 0x0c) { out += this.templateInstance(cur, subs); continue; }
+      if (tok === 0x01) { out += this.element(cur, subs); continue; }
+      if (tok === 0x05 || tok === 0x0d || tok === 0x0e || tok === 0x07 ||
+        tok === 0x08 || tok === 0x09) {
+        out += this.contentItem(cur, subs);
+        continue;
+      }
+      break; // unknown token - stop rather than run off the rails
+    }
+    return out;
+  };
+
+  ChunkReader.prototype.contentItem = function (cur, subs) {
+    const raw = this.u8[cur.p];
+    const tok = raw & 0x0f;
+    const dv = this.dv;
+    if (tok === 0x05) { // value
+      cur.p += 1;
+      const vtype = this.u8[cur.p]; cur.p += 1;
+      if (vtype === 0x01) {
+        const n = dv.getUint16(cur.p, true); cur.p += 2;
+        const s = utf16.decode(this.u8.subarray(cur.p, cur.p + n * 2));
+        cur.p += n * 2;
+        return xmlEscape(s);
+      }
+      return '';
+    }
+    if (tok === 0x0d || tok === 0x0e) { // normal / optional substitution
+      cur.p += 1;
+      const id = dv.getUint16(cur.p, true); cur.p += 2;
+      const vtype = this.u8[cur.p]; cur.p += 1;
+      if (!subs || !subs[id]) return '';
+      const s = subs[id];
+      if (s.type === 0x00 || s.size === 0) return '';
+      const v = this.value(s.type, s.off, s.size);
+      return s.type === 0x21 ? flat(v) : xmlEscape(flat(v));
+    }
+    if (tok === 0x07) { // CDATA
+      cur.p += 1;
+      const n = dv.getUint16(cur.p, true); cur.p += 2;
+      const s = utf16.decode(this.u8.subarray(cur.p, cur.p + n * 2));
+      cur.p += n * 2;
+      return xmlEscape(trimNulls(s));
+    }
+    if (tok === 0x08) { cur.p += 1; const c = dv.getUint16(cur.p, true); cur.p += 2; return '&#' + c + ';'; }
+    if (tok === 0x09) { cur.p += 1; const nm = this.nameAt(cur); return '&' + nm + ';'; }
+    cur.p += 1;
+    return '';
+  };
+
+  ChunkReader.prototype.element = function (cur, subs) {
+    const raw = this.u8[cur.p];
+    const hasAttrs = (raw & 0x40) !== 0;
+    cur.p += 1;
+    cur.p += 2;                                   // dependency identifier
+    cur.p += 4;                                   // data size
+    const name = this.nameAt(cur);
+    let out = '<' + name;
+
+    if (hasAttrs) {
+      cur.p += 4;                                 // attribute list size
+      for (;;) {
+        const araw = this.u8[cur.p];
+        if ((araw & 0x0f) !== 0x06) break;
+        cur.p += 1;
+        const aname = this.nameAt(cur);
+        let aval = '';
+        for (;;) {
+          const vraw = this.u8[cur.p];
+          const vtok = vraw & 0x0f;
+          if (vtok !== 0x05 && vtok !== 0x0d && vtok !== 0x0e && vtok !== 0x07 &&
+            vtok !== 0x08 && vtok !== 0x09) break;
+          aval += this.contentItem(cur, subs);
+          if ((vraw & 0x40) === 0) break;
+        }
+        out += ' ' + aname + '="' + aval + '"';
+        if ((araw & 0x40) === 0) break;
+      }
+    }
+
+    const close = this.u8[cur.p] & 0x0f;
+    if (close === 0x03) {                         // close empty element
+      cur.p += 1;
+      return out + '/>';
+    }
+    cur.p += 1;                                   // 0x02 close start element
+    out += '>';
+
+    while (cur.p < cur.end) {
+      const tok = this.u8[cur.p] & 0x0f;
+      if (tok === 0x04) { cur.p += 1; break; }
+      if (tok === 0x00) { cur.p += 1; break; }
+      if (tok === 0x01) { out += this.element(cur, subs); continue; }
+      if (tok === 0x0c) { out += this.templateInstance(cur, subs); continue; }
+      if (tok === 0x0f) { cur.p += 4; continue; }
+      out += this.contentItem(cur, subs);
+    }
+    return out + '</' + name + '>';
+  };
+
+  ChunkReader.prototype.templateInstance = function (cur, parentSubs) {
+    const dv = this.dv;
+    cur.p += 1;                                   // token 0x0c
+    cur.p += 1;                                   // version
+    cur.p += 4;                                   // template id
+    const defRel = dv.getUint32(cur.p, true); cur.p += 4;
+    const here = cur.p - this.cs;
+
+    let defOff;
+    if (defRel === here) {                        // definition stored inline
+      defOff = cur.p;
+      const dataSize = dv.getUint32(cur.p + 20, true);
+      cur.p += 24 + dataSize;
+    } else {
+      defOff = this.cs + defRel;
+    }
+    const bodyStart = defOff + 24;
+    const bodySize = dv.getUint32(defOff + 20, true);
+
+    // instance values
+    const nVals = dv.getUint32(cur.p, true); cur.p += 4;
+    const descs = [];
+    for (let i = 0; i < nVals; i++) {
+      descs.push({ size: dv.getUint16(cur.p, true), type: this.u8[cur.p + 2] });
+      cur.p += 4;
+    }
+    const subs = [];
+    for (let i = 0; i < nVals; i++) {
+      subs.push({ type: descs[i].type, off: cur.p, size: descs[i].size });
+      cur.p += descs[i].size;
+    }
+
+    const bcur = { p: bodyStart, end: Math.min(bodyStart + bodySize, this.u8.byteLength) };
+    return this.fragment(bcur, subs);
+  };
+
+  // ------------------------------------------------------------- records ---
+  const LEVELS = { 0: 'Information', 1: 'Critical', 2: 'Error', 3: 'Warning', 4: 'Information', 5: 'Verbose' };
+
+  function unesc(s) {
+    if (s.indexOf('&') < 0) return s;
+    return s.replace(/&(?:amp|lt|gt|quot|apos|#(\d+)|#x([0-9a-fA-F]+));/g, function (m, d, h) {
+      if (d) return String.fromCharCode(+d);
+      if (h) return String.fromCharCode(parseInt(h, 16));
+      return { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" }[m];
+    });
+  }
+  function attr(tagBody, name) {
+    const m = new RegExp(name + '="([^"]*)"').exec(tagBody);
+    return m ? unesc(m[1]) : '';
+  }
+  function tagBody(xml, name) {
+    const m = new RegExp('<' + name + '(\\s[^>]*)?(?:/>|>)').exec(xml);
+    return m ? (m[1] || '') : null;
+  }
+  function tagText(xml, name) {
+    const m = new RegExp('<' + name + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + name + '>').exec(xml);
+    return m ? unesc(m[1]) : '';
+  }
+
+  function shapeRecord(xml, recordId, filetime) {
+    const rec = {
+      recordId: recordId.toString(), fileRecordId: recordId.toString(),
+      timestamp: isoFromFiletime(filetime), timeMs: filetimeToMs(filetime),
+      provider: '', providerGuid: '', eventId: '', level: '', levelName: '',
+      task: '', opcode: '', keywords: '', channel: '', computer: '', security: '',
+      processId: '', threadId: '', data: [], xml: xml
+    };
+    const sysEnd = xml.indexOf('</System>');
+    const sys = sysEnd > 0 ? xml.slice(0, sysEnd) : xml;
+
+    const prov = tagBody(sys, 'Provider');
+    if (prov !== null) { rec.provider = attr(prov, 'Name'); rec.providerGuid = attr(prov, 'Guid'); }
+    rec.eventId = tagText(sys, 'EventID');
+    rec.level = tagText(sys, 'Level');
+    rec.levelName = LEVELS[rec.level] !== undefined ? LEVELS[rec.level] : 'Unknown';
+    rec.task = tagText(sys, 'Task');
+    rec.opcode = tagText(sys, 'Opcode');
+    rec.keywords = tagText(sys, 'Keywords');
+    rec.channel = tagText(sys, 'Channel');
+    rec.computer = tagText(sys, 'Computer');
+    const erid = tagText(sys, 'EventRecordID');
+    if (erid) rec.recordId = erid;
+    const ex = tagBody(sys, 'Execution');
+    if (ex !== null) { rec.processId = attr(ex, 'ProcessID'); rec.threadId = attr(ex, 'ThreadID'); }
+    const se = tagBody(sys, 'Security');
+    if (se !== null) rec.security = attr(se, 'UserID');
+    const tc = tagBody(sys, 'TimeCreated');
+    if (tc !== null) {
+      const t = attr(tc, 'SystemTime');
+      const ms = Date.parse(t && !/[Z+]|\.\d+$/.test(t) ? t + 'Z' : t);
+      if (!isNaN(ms)) { rec.timestamp = t; rec.timeMs = ms; }
+    }
+
+    // event data block
+    let block = '';
+    for (const w of ['EventData', 'UserData', 'ProcessingErrorData']) {
+      const m = new RegExp('<' + w + '(?:\\s[^>]*)?>([\\s\\S]*)</' + w + '>').exec(xml);
+      if (m) { block = m[1]; break; }
+    }
+    if (block) {
+      const re = /<([\w:.-]+)((?:[^>"]|"[^"]*")*?)(\/>|>([\s\S]*?)<\/\1>)/g;
+      let m;
+      while ((m = re.exec(block)) !== null) {
+        const tag = m[1], body = m[2] || '', inner = m[3] === '/>' ? '' : (m[4] || '');
+        if (/<[\w:.-]/.test(inner)) { re.lastIndex = m.index + ('<' + tag + body + '>').length; continue; }
+        const txt = unesc(inner);
+        if (tag === 'Binary' && !txt) continue;
+        const nm = attr(body, 'Name') || tag;
+        if (!attr(body, 'Name') && txt.indexOf('\n') >= 0) {
+          txt.split('\n').forEach(function (line, i) { rec.data.push({ name: nm + '[' + i + ']', value: line }); });
+        } else {
+          rec.data.push({ name: nm, value: txt });
+        }
+      }
+    }
+    return rec;
+  }
+
+  function parse(buffer, onProgress) {
+    const u8 = new Uint8Array(buffer);
+    if (u8.byteLength < 4096 || ascii(u8, 0, 8) !== FILE_MAGIC) {
+      throw new Error('Not an EVTX file: missing ElfFile signature.');
+    }
+    const dv = new DataView(buffer);
+    const records = [];
+    const errors = [];
+    const meta = {
+      nextRecordId: dv.getBigUint64(0x18, true).toString(),
+      major: dv.getUint16(0x26, true),
+      minor: dv.getUint16(0x24, true),
+      chunkCount: dv.getUint16(0x2a, true),
+      dirty: (dv.getUint32(0x78, true) & 0x1) === 1,
+      full: (dv.getUint32(0x78, true) & 0x2) === 2,
+      chunksRead: 0
+    };
+
+    for (let cs = 4096; cs + 512 <= u8.byteLength; cs += CHUNK_SIZE) {
+      if (ascii(u8, cs, 8) !== CHUNK_MAGIC) continue;
+      meta.chunksRead++;
+      const ch = new ChunkReader(u8, cs);
+      const chunkEnd = Math.min(cs + CHUNK_SIZE, u8.byteLength);
+      let p = cs + 512;
+      while (p + 24 <= chunkEnd) {
+        if (dv.getUint32(p, true) !== REC_MAGIC) break;
+        const size = dv.getUint32(p + 4, true);
+        if (size < 24 || p + size > chunkEnd) break;
+        const rid = dv.getBigUint64(p + 8, true);
+        const ft = dv.getBigUint64(p + 16, true);
+        try {
+          const cur = { p: p + 24, end: p + size - 4 };
+          const xml = ch.fragment(cur, null);
+          records.push(shapeRecord(xml, rid, ft));
+        } catch (e) {
+          errors.push({ recordId: rid.toString(), message: e.message });
+        }
+        p += size;
+      }
+      if (onProgress) onProgress(records.length);
+    }
+    records.sort((a, b) => a.timeMs - b.timeMs);
+    return { records: records, meta: meta, errors: errors };
+  }
+
+  return { parse: parse, LEVELS: LEVELS };
+})();
+
+
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var all = [], view = [], files = [], sel = null, shown = 0, PAGE = 300;
+  var sortKey = 'timeMs', sortDir = 1, tab = 'gen', utc = false, mask = false;
+  var brush = null; // {from,to}
+  var fileUid = 0;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function lvlClass(r) { var l = r.level; return l === '1' ? 'crit' : l === '2' ? 'err' : l === '3' ? 'warn' : l === '5' ? 'verb' : 'info'; }
+  function lvlName(r) { var c = lvlClass(r); return { crit: 'Critical', err: 'Error', warn: 'Warning', verb: 'Verbose', info: 'Information' }[c]; }
+  function lvlRank(r) { return { crit: 0, err: 1, warn: 2, info: 3, verb: 4 }[lvlClass(r)]; }
+  function fmt(ms) {
+    if (!isFinite(ms)) return '';
+    var d = new Date(ms);
+    if (utc) return d.toISOString().replace('T', ' ').slice(0, 23) + 'Z';
+    var p = function (n, w) { return String(n).padStart(w || 2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+      p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + '.' + p(d.getMilliseconds(), 3);
+  }
+  // ---------------------------------------------------------------- mask ---
+  // An .evtx routinely carries account names, SIDs, hostnames, client addresses,
+  // and full command lines. Mask hides the values of the fields named below so a
+  // record can be read or exported without handing over the identities in it.
+  var SECRET_FIELD = /(password|passwd|secret|credential|token|apikey|api_key|ntlm|pwdhash)/i;
+  // Matched as words rather than whole names, because providers spell the same
+  // idea a dozen ways: TargetUserName, "Detection User", "Account Name",
+  // CallerComputerName, SubjectUserSid, "Client Address".
+  var IDENT_FIELD = /(user|account|logon|sid\b|domain|workstation|computername|computer name|address|hostname|host name|principal|upn|e?mail|command\s?line|script\s?block|caller)/i;
+  function isSensitive(name) { var s = String(name == null ? '' : name); return SECRET_FIELD.test(s) || IDENT_FIELD.test(s); }
+
+  function maskVal(v) {
+    var s = String(v == null ? '' : v);
+    if (!s) return s;
+    return s.length <= 10 ? '\u2022\u2022\u2022\u2022\u2022\u2022' : s.slice(0, 4) + '\u2026 [' + (s.length - 4) + ' chars masked]';
+  }
+  // An account name also shows up inside profile paths, in fields that are not
+  // themselves sensitive (Path, Image, TargetFilename) and in unnamed blobs.
+  var PROFILE_PATH = /(\\Users\\|\\Documents and Settings\\|\/home\/|\/Users\/)([^\\/"'<>\s]+)/g;
+  // A domain SID names a person. The well-known ones (S-1-5-18/19/20, S-1-5-32-*)
+  // name a role, so they stay readable.
+  var DOMAIN_SID = /\bS-1-5-21(?:-\d+){3,}\b/g;
+  // Shape rules run on every value, named or not, because providers park account
+  // data in positional fields like param7 that no name list can anticipate.
+  function maskShapes(v) {
+    return String(v == null ? '' : v)
+      .replace(DOMAIN_SID, function (m) { return maskVal(m); })
+      .replace(PROFILE_PATH, function (m, root, user) { return root + maskVal(user); });
+  }
+  function fieldVal(d) {
+    if (!mask) return d.value;
+    return isSensitive(d.name) ? maskVal(d.value) : maskShapes(d.value);
+  }
+  function sidVal(r) { return (mask && r.security) ? maskVal(r.security) : r.security; }
+  function hostVal(r) { return (mask && r.computer) ? maskVal(r.computer) : r.computer; }
+
+  // Substitute the same masked values into the raw XML. Longest first, so a
+  // short value cannot chew through a longer one it happens to sit inside.
+  function xmlEsc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function maskedXml(r) {
+    if (!mask) return r.xml;
+    var x = r.xml, vals = [];
+    var reEsc = function (s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+    var replaceBody = function (pattern, value) {
+      var masked = xmlEsc(maskVal(value));
+      x = x.replace(pattern, function (whole, open, close) { return open + masked + close; });
+    };
+    r.data.forEach(function (d) {
+      if (!isSensitive(d.name) || !d.value) return;
+      vals.push(String(d.value));
+      var name = reEsc(xmlEsc(d.name));
+      var value = reEsc(xmlEsc(d.value));
+      replaceBody(new RegExp('(<[\\w:.-]+\\b[^>]*\\bName="' + name + '"[^>]*>)' + value + '(<\\/[\\w:.-]+>)', 'g'), d.value);
+      if (/^[A-Za-z_][\w:.-]*$/.test(d.name)) {
+        replaceBody(new RegExp('(<'+ reEsc(d.name) + '\\b[^>]*>)' + value + '(<\\/' + reEsc(d.name) + '>)', 'g'), d.value);
+      }
+    });
+    if (r.computer) {
+      vals.push(String(r.computer));
+      replaceBody(/(<Computer\b[^>]*>)[\s\S]*?(<\/Computer>)/g, r.computer);
+    }
+    if (r.security) {
+      vals.push(String(r.security));
+      x = x.replace(/(<Security\b[^>]*\bUserID=")[^"]*(")/g, function (whole, open, close) {
+        return open + xmlEsc(maskVal(r.security)) + close;
+      });
+    }
+    vals.filter(function (v) { return v.length >= 4; })
+      .sort(function (a, b) { return b.length - a.length; })
+      .forEach(function (v) {
+        var m = maskVal(v), e = xmlEsc(v);
+        x = x.split(v).join(m);
+        if (e !== v) x = x.split(e).join(m);
+      });
+    return maskShapes(x);
+  }
+
+  function summarise(r, doMask) {
+    if (!r.data.length) return '';
+    var out = [];
+    for (var i = 0; i < r.data.length && out.length < 4; i++) {
+      var d = r.data[i];
+      var raw = !doMask ? d.value : (isSensitive(d.name) ? maskVal(d.value) : maskShapes(d.value));
+      var v = String(raw || '').replace(/\s+/g, ' ').trim();
+      if (!v) continue;
+      out.push(/^Data\[\d+\]$/.test(d.name) ? v : d.name + '=' + v);
+    }
+    return out.join('  ·  ').slice(0, 400);
+  }
+
+  // ------------------------------------------------------------ loading ---
+  function readFiles(fileList) {
+    var arr = Array.prototype.slice.call(fileList);
+    if (!arr.length) return;
+    $('err').style.display = 'none';
+    $('busy').style.display = 'block';
+    var i = 0;
+    (function next() {
+      if (i >= arr.length) { $('busy').style.display = 'none'; done(); return; }
+      var f = arr[i++], fileKey = ++fileUid;
+      $('busy').textContent = 'Parsing ' + f.name + '…';
+      var fr = new FileReader();
+      fr.onload = function () {
+        setTimeout(function () {
+          try {
+            var res = EVTX.parse(fr.result);
+            res.records.forEach(function (r) {
+              r.file = f.name;
+              r.fileKey = fileKey;
+              r.levelRank = lvlRank(r);
+              r.eventIdNum = parseInt(r.eventId, 10);
+              if (isNaN(r.eventIdNum)) r.eventIdNum = -1;
+              r.summary = summarise(r, false);
+              r.hay = (r.provider + ' ' + r.eventId + ' ' + r.computer + ' ' + r.channel + ' ' + r.summary + ' ' + r.xml).toLowerCase();
+              all.push(r);
+            });
+            files.push({ key: fileKey, name: f.name, count: res.records.length, meta: res.meta, bad: res.errors.length });
+          } catch (e) {
+            $('err').style.display = 'block';
+            $('err').textContent = f.name + ': ' + e.message;
+          }
+          next();
+        }, 10);
+      };
+      fr.onerror = function () { $('err').style.display = 'block'; $('err').textContent = 'Could not read ' + f.name; next(); };
+      fr.readAsArrayBuffer(f);
+    })();
+  }
+
+  function done() {
+    if (!all.length) { $('err').style.display = 'block'; $('err').textContent = 'No event records found in that file.'; return; }
+    $('upload').style.display = 'none';
+    $('app').style.display = 'flex';
+    buildChips(); buildSelects(); apply();
+  }
+
+  function buildChips() {
+    $('chips').innerHTML = files.map(function (f, i) {
+      return '<span class="chip"><b>' + esc(f.name) + '</b>' + f.count + ' events' +
+        (f.bad ? ' · ' + f.bad + ' unreadable' : '') +
+        (f.meta.dirty ? ' · dirty' : '') +
+        '<button class="x" data-rm="' + i + '" title="Remove">✕</button></span>';
+    }).join('');
+  }
+  document.addEventListener('click', function (e) {
+    var rm = e.target.getAttribute && e.target.getAttribute('data-rm');
+    if (rm === null || rm === undefined) return;
+    var key = files[+rm].key;
+    files.splice(+rm, 1);
+    all = all.filter(function (r) { return r.fileKey !== key; });
+    if (!all.length) { location.reload(); return; }
+    sel = null;
+    $('dTitle').textContent = 'No event selected';
+    $('dMeta').textContent = 'Pick a row to see everything the record contains.';
+    $('dBody').innerHTML = '<div class="none">Nothing selected.</div>';
+    buildChips(); buildSelects(); apply();
+  });
+
+  function buildSelects() {
+    var provs = {}, ids = {};
+    all.forEach(function (r) { provs[r.provider] = (provs[r.provider] || 0) + 1; ids[r.eventId] = (ids[r.eventId] || 0) + 1; });
+    var pv = $('prov').value, ev = $('eid').value;
+    $('prov').innerHTML = '<option value="">All sources (' + Object.keys(provs).length + ')</option>' +
+      Object.keys(provs).sort(function (a, b) { return provs[b] - provs[a]; })
+        .map(function (p) { return '<option value="' + esc(p) + '">' + esc(p || '(none)') + ' — ' + provs[p] + '</option>'; }).join('');
+    $('eid').innerHTML = '<option value="">All event IDs (' + Object.keys(ids).length + ')</option>' +
+      Object.keys(ids).sort(function (a, b) { return ids[b] - ids[a]; })
+        .map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + ' — ' + ids[i] + '</option>'; }).join('');
+    $('prov').value = pv; $('eid').value = ev;
+  }
+
+  // ----------------------------------------------------------- filtering ---
+  function activeLevels() {
+    var s = {};
+    Array.prototype.forEach.call(document.querySelectorAll('.lvl'), function (b) { if (b.classList.contains('on')) s[b.dataset.l] = 1; });
+    return s;
+  }
+  function apply() {
+    var q = $('q').value.trim().toLowerCase();
+    var terms = q ? q.split(/\s+/) : [];
+    var lv = activeLevels(), pv = $('prov').value, ev = $('eid').value;
+    view = all.filter(function (r) {
+      if (!lv[lvlClass(r)]) return false;
+      if (pv && r.provider !== pv) return false;
+      if (ev && r.eventId !== ev) return false;
+      if (brush && (r.timeMs < brush.from || r.timeMs > brush.to)) return false;
+      for (var i = 0; i < terms.length; i++) if (r.hay.indexOf(terms[i]) < 0) return false;
+      return true;
+    });
+    view.sort(function (a, b) {
+      var x = a[sortKey], y = b[sortKey];
+      if (typeof x === 'string') { x = x.toLowerCase(); y = String(y).toLowerCase(); }
+      return (x < y ? -1 : x > y ? 1 : 0) * sortDir;
+    });
+    renderStats(); renderTimeline(); renderHead();
+    shown = 0; $('rows').innerHTML = ''; more();
+  }
+
+  // -------------------------------------------------------------- render ---
+  function renderStats() {
+    var c = { crit: 0, err: 0, warn: 0, info: 0, verb: 0 }, hosts = {}, provs = {}, min = Infinity, max = -Infinity;
+    view.forEach(function (r) {
+      c[lvlClass(r)]++; hosts[r.computer] = 1; provs[r.provider] = 1;
+      if (r.timeMs < min) min = r.timeMs; if (r.timeMs > max) max = r.timeMs;
+    });
+    var span = '';
+    if (isFinite(min)) {
+      var s = (max - min) / 1000;
+      span = s < 90 ? Math.round(s) + ' s' : s < 5400 ? (s / 60).toFixed(1) + ' min' : s < 172800 ? (s / 3600).toFixed(1) + ' h' : (s / 86400).toFixed(1) + ' d';
+    }
+    var cards = [
+      ['Showing', view.length.toLocaleString(), all.length === view.length ? 'all events' : 'of ' + all.length.toLocaleString(), ''],
+      ['Critical + error', (c.crit + c.err).toLocaleString(), c.crit ? c.crit + ' critical' : '', 'err'],
+      ['Warning', c.warn.toLocaleString(), '', 'warn'],
+      ['Information', (c.info + c.verb).toLocaleString(), c.verb ? c.verb + ' verbose' : '', 'ok'],
+      ['Sources', String(Object.keys(provs).length), Object.keys(hosts).length + ' computer' + (Object.keys(hosts).length === 1 ? '' : 's'), ''],
+      ['Time span', span || '—', isFinite(min) ? fmt(min).slice(0, 10) : '', '']
+    ];
+    $('stats').innerHTML = cards.map(function (x) {
+      return '<div class="stat ' + x[3] + '"><div class="k">' + x[0] + '</div><div class="v">' + x[1] + '</div>' + (x[2] ? '<div class="s">' + esc(x[2]) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+
+  function renderTimeline() {
+    var svg = $('tl'), W = svg.clientWidth || 900, H = 64;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    if (!all.length) { svg.innerHTML = ''; return; }
+    var min = Infinity, max = -Infinity;
+    all.forEach(function (r) { if (r.timeMs < min) min = r.timeMs; if (r.timeMs > max) max = r.timeMs; });
+    if (!isFinite(min)) { svg.innerHTML = ''; return; }
+    if (max === min) max = min + 1000;
+    var N = Math.max(24, Math.min(180, Math.floor(W / 6)));
+    var step = (max - min) / N;
+    var b = []; for (var i = 0; i < N; i++) b.push({ crit: 0, warn: 0, info: 0, n: 0 });
+    all.forEach(function (r) {
+      var k = Math.min(N - 1, Math.floor((r.timeMs - min) / step));
+      if (k < 0) return;
+      var c = lvlClass(r);
+      if (c === 'crit' || c === 'err') b[k].crit++; else if (c === 'warn') b[k].warn++; else b[k].info++;
+      b[k].n++;
+    });
+    var peak = Math.max.apply(null, b.map(function (x) { return x.n; })) || 1;
+    var bw = W / N, out = '', base = H - 12;
+    for (var j = 0; j < N; j++) {
+      var t0 = min + j * step, inSel = !brush || (t0 + step >= brush.from && t0 <= brush.to);
+      var h = b[j].n ? Math.max(2, (b[j].n / peak) * (base - 4)) : 0, y = base - h;
+      if (!h) continue;
+      var parts = [['crit', b[j].crit, 'var(--err)'], ['warn', b[j].warn, 'var(--warn)'], ['info', b[j].info, 'var(--ok)']];
+      var acc = y;
+      parts.forEach(function (p) {
+        if (!p[1]) return;
+        var ph = h * (p[1] / b[j].n);
+        out += '<rect class="b" x="' + (j * bw).toFixed(2) + '" y="' + acc.toFixed(2) + '" width="' + Math.max(1, bw - 0.7).toFixed(2) + '" height="' + ph.toFixed(2) + '" fill="' + p[2] + '" opacity="' + (inSel ? 0.9 : 0.22) + '"></rect>';
+        acc += ph;
+      });
+    }
+    out += '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="var(--border2)" stroke-width="1"></line>';
+    out += '<text x="2" y="' + (H - 1) + '" fill="var(--text-muted)" font-size="9.5" font-family="var(--mono)">' + esc(fmt(min).slice(0, 16)) + '</text>';
+    out += '<text x="' + (W - 2) + '" y="' + (H - 1) + '" text-anchor="end" fill="var(--text-muted)" font-size="9.5" font-family="var(--mono)">' + esc(fmt(max).slice(0, 16)) + '</text>';
+    svg.innerHTML = out;
+    svg._range = { min: min, max: max, W: W };
+    $('tlRange').innerHTML = brush
+      ? 'Range: <b>' + esc(fmt(brush.from)) + '</b> → <b>' + esc(fmt(brush.to)) + '</b> · click to clear'
+      : 'Drag across the band to filter by time';
+  }
+
+  function renderHead() {
+    Array.prototype.forEach.call(document.querySelectorAll('thead th'), function (th) {
+      var k = th.dataset.s;
+      th.innerHTML = th.textContent.replace(/[▲▼]\s*$/, '').trim() + (k === sortKey ? ' <span class="ar">' + (sortDir > 0 ? '▲' : '▼') + '</span>' : '');
+    });
+  }
+
+  function more() {
+    var frag = document.createDocumentFragment();
+    var end = Math.min(view.length, shown + PAGE);
+    for (var i = shown; i < end; i++) {
+      var r = view[i], c = lvlClass(r);
+      var sum = mask ? summarise(r, true) : r.summary;
+      var tr = document.createElement('tr');
+      tr.dataset.i = i;
+      if (sel === r) tr.className = 'sel';
+      tr.innerHTML = '<td class="t">' + esc(fmt(r.timeMs)) + '</td>' +
+        '<td><span class="pill ' + c + '">' + lvlName(r) + '</span></td>' +
+        '<td class="id">' + esc(r.eventId) + '</td>' +
+        '<td class="p" title="' + esc(r.provider) + '">' + esc(r.provider || '—') + '</td>' +
+        '<td class="p">' + esc(hostVal(r) || '—') + '</td>' +
+        '<td class="sum" title="' + esc(sum) + '">' + esc(sum) + '</td>';
+      frag.appendChild(tr);
+    }
+    $('rows').appendChild(frag);
+    shown = end;
+    $('more').textContent = view.length === 0 ? '' : shown < view.length ? 'Showing ' + shown + ' of ' + view.length + ' — scroll for more' : shown + ' event' + (shown === 1 ? '' : 's');
+    if (!view.length) $('more').innerHTML = '<div class="empty">No events match these filters.</div>';
+  }
+
+  $('list').addEventListener('scroll', function () {
+    var el = $('list');
+    if (shown < view.length && el.scrollTop + el.clientHeight > el.scrollHeight - 400) more();
+  });
+
+  $('rows').addEventListener('click', function (e) {
+    var tr = e.target.closest('tr'); if (!tr) return;
+    select(view[+tr.dataset.i], tr);
+  });
+  function select(r, tr) {
+    sel = r;
+    Array.prototype.forEach.call($('rows').children, function (x) { x.classList.remove('sel'); });
+    if (tr) tr.classList.add('sel');
+    renderDetail();
+  }
+
+  function hl(s) {
+    var q = $('q').value.trim();
+    if (!q) return s;
+    var terms = q.split(/\s+/).filter(Boolean).map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+    if (!terms.length) return s;
+    return s.replace(new RegExp('(' + terms.join('|') + ')', 'gi'), '<mark>$1</mark>');
+  }
+  function colorXml(x) {
+    return esc(x)
+      .replace(/&lt;(\/?)([\w:.-]+)/g, '&lt;$1<span class="xtag">$2</span>')
+      .replace(/([\w:.-]+)=&quot;([^&]*)&quot;/g, '<span class="xatt">$1</span>=&quot;<span class="xval">$2</span>&quot;');
+  }
+  function prettyXml(x) {
+    return x.replace(/></g, '>\n<').split('\n').map(function (line) {
+      return line;
+    }).join('\n');
+  }
+
+  function renderDetail() {
+    var r = sel;
+    if (!r) return;
+    $('dTitle').innerHTML = '<span class="pill ' + lvlClass(r) + '" style="margin-right:8px">' + lvlName(r) + '</span>Event ' + esc(r.eventId) + ' — ' + esc(r.provider || 'unknown source');
+    $('dMeta').innerHTML = esc(fmt(r.timeMs)) + (utc ? ' UTC' : ' local') + ' · ' + esc(r.channel || '—') + ' · ' + esc(hostVal(r) || '—') + ' · record ' + esc(r.recordId) + ' · ' + esc(r.file);
+    var b = '';
+    if (tab === 'gen') {
+      b += '<div class="hint">Windows renders a sentence for each event using the provider\'s message file, which is installed on the machine that generated the log and is not stored inside the .evtx. The named fields below are the exact values that sentence would have been built from.</div>';
+      if (mask) b += '<div class="hint">Mask covers named fields: accounts, SIDs, domains, client addresses, workstations, command lines, and anything named like a credential. Domain SIDs and the account segment of user-profile paths are hidden wherever they appear, whatever the field is called. A name list cannot be complete, though: positional fields such as <code>param7</code> and unnamed <code>Data</code> blobs can still carry a bare account name, so read the record before sharing it.</div>';
+      if (!r.data.length) b += '<div class="none">This record carries no event data fields.</div>';
+      else b += '<table class="kv">' + r.data.map(function (d) {
+        return '<tr' + (mask && isSensitive(d.name) ? ' class="hi"' : '') + '><td class="k">' + esc(d.name) + '</td><td class="v">' + hl(esc(fieldVal(d))) + '</td></tr>';
+      }).join('') + '</table>';
+    } else if (tab === 'sys') {
+      var rows = [
+        ['Provider', r.provider], ['Provider GUID', r.providerGuid], ['Event ID', r.eventId],
+        ['Level', r.level + ' (' + lvlName(r) + ')'], ['Task', r.task], ['Opcode', r.opcode],
+        ['Keywords', r.keywords], ['Channel', r.channel], ['Computer', hostVal(r)],
+        ['User SID', sidVal(r)], ['Process ID', r.processId], ['Thread ID', r.threadId],
+        ['Record ID', r.recordId], ['Time (raw)', r.timestamp], ['Source file', r.file]
+      ];
+      b += '<table class="kv">' + rows.map(function (x) {
+        return '<tr><td class="k">' + x[0] + '</td><td class="v">' + (x[1] ? hl(esc(x[1])) : '<span style="color:var(--text-muted)">—</span>') + '</td></tr>';
+      }).join('') + '</table>';
+    } else {
+      b += '<div style="display:flex;gap:6px;margin-bottom:10px"><button class="btn" id="cpX">Copy XML</button><button class="btn" id="cpJ">Copy as JSON</button></div>';
+      b += '<pre class="xml">' + colorXml(prettyXml(maskedXml(r))) + '</pre>';
+    }
+    $('dBody').innerHTML = b;
+    if (tab === 'xml') {
+      $('cpX').onclick = function () { copy(prettyXml(maskedXml(r)), this); };
+      $('cpJ').onclick = function () { copy(JSON.stringify(recJson(r), null, 2), this); };
+    }
+  }
+  function copy(t, btn) {
+    navigator.clipboard.writeText(t).then(function () {
+      var o = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = o; }, 1200);
+    }, function () { btn.textContent = 'Copy failed'; });
+  }
+  function recJson(r) {
+    var d = {};
+    r.data.forEach(function (x) { d[x.name] = fieldVal(x); });
+    return {
+      time: r.timestamp, level: lvlName(r), eventId: r.eventId, provider: r.provider,
+      channel: r.channel, computer: hostVal(r), userSid: sidVal(r), processId: r.processId,
+      threadId: r.threadId, recordId: r.recordId, sourceFile: r.file, data: d
+    };
+  }
+
+  // -------------------------------------------------------------- events ---
+  $('q').addEventListener('input', debounce(apply, 160));
+  $('prov').addEventListener('change', apply);
+  $('eid').addEventListener('change', apply);
+  $('lvls').addEventListener('click', function (e) {
+    if (!e.target.classList.contains('lvl')) return;
+    e.target.classList.toggle('on'); apply();
+  });
+  $('clr').addEventListener('click', function () {
+    $('q').value = ''; $('prov').value = ''; $('eid').value = ''; brush = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.lvl'), function (b) { b.classList.add('on'); });
+    apply();
+  });
+  document.querySelector('thead').addEventListener('click', function (e) {
+    var th = e.target.closest('th'); if (!th || !th.dataset.s) return;
+    if (sortKey === th.dataset.s) sortDir = -sortDir; else { sortKey = th.dataset.s; sortDir = th.dataset.s === 'timeMs' ? 1 : 1; }
+    apply();
+  });
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    if (!e.target.classList.contains('tab')) return;
+    tab = e.target.dataset.t;
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) { t.classList.toggle('on', t === e.target); });
+    renderDetail();
+  });
+  $('tzBtn').addEventListener('click', function () {
+    utc = !utc; this.textContent = utc ? 'UTC' : 'Local'; this.classList.toggle('on', utc);
+    apply(); if (sel) renderDetail();
+  });
+  $('maskBtn').addEventListener('click', function () {
+    mask = !mask;
+    this.textContent = mask ? 'Masked' : 'Mask';
+    this.classList.toggle('warnon', mask);
+    this.title = mask
+      ? 'Account, address, and credential values are hidden in the list, the detail pane, the XML, and both exports'
+      : 'Hide account, address, and credential values';
+    apply(); if (sel) renderDetail();
+  });
+  $('addBtn').addEventListener('click', function () { $('file2').click(); });
+  $('file2').addEventListener('change', function () { readFiles(this.files); this.value = ''; });
+  $('csvBtn').addEventListener('click', function () { exportCsv(); });
+  $('jsonBtn').addEventListener('click', function () { exportJson(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== $('q')) { e.preventDefault(); $('q').focus(); return; }
+    if (e.key === 'Escape') { if (document.activeElement === $('q')) $('q').blur(); return; }
+    if (document.activeElement === $('q') || document.activeElement.tagName === 'SELECT') return;
+    if (e.key === 't') { setTheme(theme === 'dark' ? 'light' : 'dark'); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'j' || e.key === 'k') {
+      var i = view.indexOf(sel);
+      var n = (e.key === 'ArrowDown' || e.key === 'j') ? i + 1 : i - 1;
+      if (n < 0 || n >= view.length) return;
+      e.preventDefault();
+      while (n >= shown) more();
+      var tr = $('rows').children[n];
+      select(view[n], tr);
+      if (tr) tr.scrollIntoView({ block: 'nearest' });
+    }
+  });
+
+  // timeline brush
+  (function () {
+    var svg = $('tl'), dragging = false, x0 = 0;
+    function pos(e) { var r = svg.getBoundingClientRect(); return (e.clientX - r.left) / r.width; }
+    function toTime(f) { var m = svg._range; return m.min + f * (m.max - m.min); }
+    svg.addEventListener('mousedown', function (e) { if (!svg._range) return; dragging = true; x0 = pos(e); });
+    window.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var a = Math.min(x0, pos(e)), b = Math.max(x0, pos(e));
+      if (b - a < 0.004) return;
+      brush = { from: toTime(a), to: toTime(b) };
+      renderTimeline();
+    });
+    window.addEventListener('mouseup', function (e) {
+      if (!dragging) return;
+      dragging = false;
+      if (Math.abs(pos(e) - x0) < 0.004) brush = null;
+      apply();
+    });
+  })();
+  window.addEventListener('resize', debounce(renderTimeline, 150));
+
+  // resizer
+  (function () {
+    var g = $('grip'), d = $('detail'), on = false;
+    g.addEventListener('mousedown', function () { on = true; document.body.style.cursor = 'col-resize'; });
+    window.addEventListener('mousemove', function (e) {
+      if (!on) return;
+      var w = window.innerWidth - e.clientX;
+      d.style.width = Math.max(330, Math.min(window.innerWidth - 420, w)) + 'px';
+    });
+    window.addEventListener('mouseup', function () { on = false; document.body.style.cursor = ''; });
+  })();
+
+  // ------------------------------------------------------------- exports ---
+  function dl(name, text, type) {
+    var b = new Blob([text], { type: type });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+  function csvCell(v) {
+    v = String(v == null ? '' : v);
+    if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function exportCsv() {
+    var head = ['Time', 'Level', 'EventID', 'Provider', 'Channel', 'Computer', 'UserSID', 'ProcessID', 'ThreadID', 'RecordID', 'SourceFile', 'EventData'];
+    var lines = [head.join(',')];
+    view.forEach(function (r) {
+      lines.push([fmt(r.timeMs), lvlName(r), r.eventId, r.provider, r.channel, hostVal(r), sidVal(r),
+        r.processId, r.threadId, r.recordId, r.file,
+        r.data.map(function (d) { return d.name + '=' + fieldVal(d); }).join(' | ')].map(csvCell).join(','));
+    });
+    dl('events-' + Date.now() + '.csv', lines.join('\n'), 'text/csv');
+  }
+  function exportJson() {
+    dl('events-' + Date.now() + '.json', JSON.stringify(view.map(recJson), null, 2), 'application/json');
+  }
+
+  function debounce(fn, ms) { var t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+  // -------------------------------------------------------------- theme ---
+  var theme = 'dark';
+  function setTheme(t) {
+    theme = t;
+    document.documentElement.setAttribute('data-theme', t);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-theme-toggle]'), function (b) {
+      b.textContent = t === 'dark' ? 'Light' : 'Dark';
+      b.title = 'Switch to ' + (t === 'dark' ? 'light' : 'dark') + ' mode';
+    });
+    if (all.length) { renderTimeline(); }
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-theme-toggle]');
+    if (b) setTheme(theme === 'dark' ? 'light' : 'dark');
+  });
+  try {
+    setTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  } catch (e) { setTheme('dark'); }
+
+  // ------------------------------------------------------------- upload ---
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) { readFiles(e.dataTransfer.files); });
+  $('file').addEventListener('change', function () { readFiles(this.files); });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('drop', function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>

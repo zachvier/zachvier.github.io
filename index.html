@@ -3,200 +3,248 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Zach Vivier — technical support engineer and technical writer.">
-  <meta name="theme-color" content="#15191c">
-  <title>Zach Vivier — Technical Support &amp; Writing</title>
-  <link rel="icon" href="/favicon.png" type="image/png">
+  <meta name="description" content="Zach Vivier — technical support engineer, technical writer, and builder of practical software.">
+  <meta name="theme-color" content="#1c1b1a">
+  <title>Zach Vivier // tools, systems, writing</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      color-scheme: dark;
-      --background: #15191c;
-      --surface: #1d2228;
-      --border: #303740;
-      --text: #d9dde3;
-      --muted: #b9bec7;
-      --link: #82b2f2;
-      --link-hover: #a9caff;
-      --focus: #b8d5ff;
+      --bg: #1c1b1a;
+      --surface: #252321;
+      --surface-raised: #2c2926;
+      --border: #403b35;
+      --text: #ede9e2;
+      --muted: #b3aa9e;
+      --dim: #7e766b;
+      --accent: #d7834b;
+      --accent-bright: #f0a36d;
+      --accent-soft: rgba(215,131,75,.13);
+      --green: #91aa82;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, sans-serif;
     }
 
-    :root[data-theme="light"] {
-      color-scheme: light;
-      --background: #f6f8fa;
-      --surface: #ffffff;
-      --border: #d0d7de;
-      --text: #24292f;
-      --muted: #57606a;
-      --link: #0969da;
-      --link-hover: #0550ae;
-      --focus: #0969da;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      min-height: 100%;
-      background: var(--background);
-    }
-
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      min-height: 100vh;
       margin: 0;
-      background: var(--background);
+      background: var(--bg);
       color: var(--text);
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-      transition: background-color 160ms ease, color 160ms ease;
+      font: 15px/1.65 var(--sans);
+      -webkit-font-smoothing: antialiased;
     }
-
-    .page {
-      width: 100%;
-      padding: 52px 16px;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .35;
+      background-image: radial-gradient(circle at 1px 1px, rgba(237,233,226,.08) 1px, transparent 0);
+      background-size: 28px 28px;
     }
+    a { color: inherit; }
+    .wrap { position: relative; z-index: 1; width: min(760px, calc(100% - 40px)); margin: 0 auto; }
 
-    .masthead {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
+    header { padding: 72px 0 44px; }
+    .identity { display: flex; align-items: center; gap: 16px; }
+    .mark {
+      display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 auto;
+      border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft);
+      color: var(--accent-bright); font: 700 18px var(--mono);
     }
+    h1, h2, .eyebrow, .mono { font-family: var(--mono); }
+    h1 { margin: 0; font: 600 22px/1.2 var(--mono); letter-spacing: -.02em; }
+    .tagline { max-width: 57ch; margin: 18px 0 0; color: var(--muted); font-size: 16px; }
+    nav { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--border); font: 13px var(--mono); }
+    nav a { color: var(--dim); text-decoration: none; }
+    nav a:hover, nav a:focus-visible { color: var(--accent-bright); }
 
-    h1 {
-      min-width: 0;
-      margin: 9px 0 0;
-      font-size: clamp(1.25rem, 2vw, 2rem);
-      font-weight: 700;
-      line-height: 1.2;
-      letter-spacing: 0.01em;
+    section { padding: 40px 0; border-top: 1px solid var(--border); }
+    .eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; color: var(--dim); font-size: 12px; letter-spacing: .09em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+    .section-intro { margin: 0 0 18px; color: var(--muted); }
+
+    .log, .repo-card, .project, .note, .about-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .log { padding: 17px 20px; font: 13px/1.65 var(--mono); }
+    .log-line { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 8px 0; border-bottom: 1px dashed rgba(64,59,53,.85); color: var(--muted); }
+    .log-line:last-child { border-bottom: 0; }
+    .log-date { color: var(--dim); }
+    .log-line strong { color: var(--text); font-weight: 500; }
+
+    .projects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .project { display: flex; flex-direction: column; min-height: 178px; padding: 18px; text-decoration: none; transition: border-color .15s ease, background .15s ease, transform .15s ease; }
+    .project:hover, .project:focus-visible { border-color: var(--accent); background: var(--surface-raised); transform: translateY(-2px); }
+    .project-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .project-name { color: var(--accent-bright); font: 600 15px var(--mono); }
+    .project-type { color: var(--dim); font: 11px var(--mono); text-transform: uppercase; }
+    .project p { margin: 12px 0 18px; color: var(--muted); font-size: 13.5px; }
+    .project-meta { margin-top: auto; color: var(--dim); font: 12px var(--mono); }
+
+    .repo-card { overflow: hidden; }
+    .repo-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 17px 19px; border: 0; background: transparent; color: var(--text); font: 500 15px var(--sans); text-align: left; cursor: pointer; }
+    .repo-toggle:hover { background: var(--surface-raised); }
+    .repo-toggle span:last-child { color: var(--dim); font: 13px var(--mono); }
+    .repo-panel { display: none; padding: 4px 12px 13px; border-top: 1px solid var(--border); }
+    .repo-card.open .repo-panel { display: block; }
+    .repo-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 12px 8px; border-radius: 7px; text-decoration: none; }
+    .repo-row:hover { background: var(--accent-soft); }
+    .repo-row strong { display: block; margin-bottom: 3px; color: var(--accent-bright); font: 14px var(--mono); }
+    .repo-row small { color: var(--muted); font-size: 12.5px; }
+    .repo-lang { flex: 0 0 auto; color: var(--dim); font: 11px var(--mono); }
+
+    .about-card { padding: 20px; }
+    .about-card p { margin: 0 0 14px; color: var(--muted); }
+    .about-card p:last-child { margin-bottom: 0; }
+    .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .link { padding: 8px 11px; border: 1px solid var(--border); border-radius: 7px; color: var(--accent-bright); font: 12px var(--mono); text-decoration: none; }
+    .link:hover, .link:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+
+    footer { display: flex; justify-content: space-between; gap: 16px; padding: 34px 0 72px; border-top: 1px solid var(--border); color: var(--dim); font: 12px var(--mono); }
+    :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 32px, 760px); }
+      header { padding: 48px 0 32px; }
+      h1 { font-size: 19px; }
+      .projects { grid-template-columns: 1fr; }
+      .log-line { grid-template-columns: 62px 1fr; gap: 10px; }
+      footer { flex-direction: column; }
     }
-
-    .theme-toggle {
-      min-width: 108px;
-      min-height: 60px;
-      padding: 10px 17px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface);
-      color: var(--text);
-      font: inherit;
-      font-size: clamp(1.125rem, 1.65vw, 1.625rem);
-      line-height: 1.2;
-      cursor: pointer;
-      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
-    }
-
-    .theme-toggle:hover {
-      border-color: var(--muted);
-    }
-
-    main {
-      margin-top: 39px;
-    }
-
-    .role {
-      margin: 0 0 28px;
-      color: var(--text);
-      font-size: clamp(1.125rem, 1.65vw, 1.625rem);
-      line-height: 1.35;
-    }
-
-    .profiles {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 13px;
-    }
-
-    a {
-      color: var(--link);
-      font-size: clamp(1.125rem, 1.65vw, 1.625rem);
-      line-height: 1.35;
-      text-underline-offset: 0.12em;
-      text-decoration-thickness: 1px;
-      transition: color 120ms ease;
-    }
-
-    a:hover {
-      color: var(--link-hover);
-    }
-
-    a:focus-visible,
-    button:focus-visible {
-      outline: 3px solid var(--focus);
-      outline-offset: 4px;
-    }
-
-    @media (max-width: 600px) {
-      .page {
-        padding: 24px 18px;
-      }
-
-      .masthead {
-        gap: 12px;
-      }
-
-      h1 {
-        margin-top: 7px;
-      }
-
-      .theme-toggle {
-        min-width: auto;
-        min-height: 44px;
-        padding: 8px 12px;
-        border-radius: 9px;
-        font-size: 1rem;
-      }
-
-      main {
-        margin-top: 48px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      body,
-      .theme-toggle,
-      a {
-        transition: none;
-      }
-    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .project { transition: none; } }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="masthead">
-      <h1>Directory: /zachvivier/</h1>
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme">Light</button>
+  <div class="wrap">
+    <header>
+      <div class="identity">
+        <div class="mark" aria-hidden="true">Z</div>
+        <h1>zach vivier // personal site</h1>
+      </div>
+      <p class="tagline">Technical support engineer and technical writer. I build practical software, explore self-hosted systems, and turn complicated workflows into clearer ones.</p>
+      <nav aria-label="Primary navigation">
+        <a href="#now">now</a>
+        <a href="#projects">projects</a>
+        <a href="#github">github</a>
+        <a href="#other">other</a>
+        <a href="#about">about</a>
+      </nav>
     </header>
 
     <main>
-      <p class="role">Technical support engineer and technical writer.</p>
-      <nav class="profiles" aria-label="Profiles">
-        <a href="https://github.com/zachvivier">GitHub/</a>
-        <a href="https://www.linkedin.com/in/zachvivier/">LinkedIn/</a>
-      </nav>
+      <section id="now">
+        <div class="eyebrow">currently</div>
+        <div class="log" aria-label="Current focus">
+          <div class="log-line"><span class="log-date">focus</span><strong>support systems, technical writing, and useful automation</strong></div>
+          <div class="log-line"><span class="log-date">building</span><span>small tools that remove friction from everyday work</span></div>
+          <div class="log-line"><span class="log-date">exploring</span><span>local software, private infrastructure, and thoughtful interfaces</span></div>
+          <div class="log-line"><span class="log-date">principle</span><span>make it useful, explain how it works, keep it maintainable</span></div>
+        </div>
+      </section>
+
+      <section id="projects">
+        <div class="eyebrow">selected work</div>
+        <h2>Public projects</h2>
+        <p class="section-intro">A few things I have built or helped shape in the open.</p>
+        <div class="projects">
+          <a class="project" href="https://github.com/zachvivier/TabGrab" target="_blank" rel="noopener">
+            <div class="project-top"><span class="project-name">TabGrab</span><span class="project-type">browser extension</span></div>
+            <p>Well-behaved browser tabs for Zendesk agents. Keeps navigation focused without external tracking.</p>
+            <span class="project-meta">JavaScript · Chrome + Firefox</span>
+          </a>
+          <a class="project" href="https://github.com/zachvivier/calwidget" target="_blank" rel="noopener">
+            <div class="project-top"><span class="project-name">CalWidget</span><span class="project-type">macOS app</span></div>
+            <p>A quiet desktop agenda that reads the calendars already connected to macOS and stays out of the way.</p>
+            <span class="project-meta">Swift · read-only calendar view</span>
+          </a>
+          <a class="project" href="https://github.com/zachvivier/crop-easy" target="_blank" rel="noopener">
+            <div class="project-top"><span class="project-name">Crop Easy</span><span class="project-type">macOS app</span></div>
+            <p>Precise image cropping with live pixel measurements, aspect controls, and predictable exports.</p>
+            <span class="project-meta">Swift · image utility</span>
+          </a>
+          <a class="project" href="https://github.com/zachvivier/mime-api-2" target="_blank" rel="noopener">
+            <div class="project-top"><span class="project-name">mime-api-2</span><span class="project-type">toolkit</span></div>
+            <p>An unofficial Python toolkit for exploring Mimecast API 2.0 workflows from a compact terminal interface.</p>
+            <span class="project-meta">Python · API automation</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="github">
+        <div class="eyebrow">code</div>
+        <h2>GitHub</h2>
+        <p class="section-intro">Public code, experiments, and documentation.</p>
+        <div class="repo-card" id="repo-card">
+          <button class="repo-toggle" type="button" aria-expanded="false" aria-controls="repo-panel"><span>View public repositories</span><span id="repo-chevron">↓</span></button>
+          <div class="repo-panel" id="repo-panel">
+            <a class="repo-row" href="https://github.com/zachvivier/zachvivier.github.io" target="_blank" rel="noopener"><span><strong>zachvivier.github.io</strong><small>This personal site, served as a dependency-free GitHub Pages site.</small></span><span class="repo-lang">HTML</span></a>
+            <a class="repo-row" href="https://github.com/zachvivier/TabGrab" target="_blank" rel="noopener"><span><strong>TabGrab</strong><small>A browser extension for keeping Zendesk agent tabs tidy.</small></span><span class="repo-lang">JS</span></a>
+            <a class="repo-row" href="https://github.com/zachvivier/calwidget" target="_blank" rel="noopener"><span><strong>calwidget</strong><small>A live calendar agenda for the macOS desktop.</small></span><span class="repo-lang">Swift</span></a>
+            <a class="repo-row" href="https://github.com/zachvivier/crop-easy" target="_blank" rel="noopener"><span><strong>crop-easy</strong><small>A native utility for exact image crops and exports.</small></span><span class="repo-lang">Swift</span></a>
+            <a class="repo-row" href="https://github.com/zachvivier/mime-api-2" target="_blank" rel="noopener"><span><strong>mime-api-2</strong><small>Unofficial scripts and a launcher for Mimecast API 2.0.</small></span><span class="repo-lang">Python</span></a>
+          </div>
+        </div>
+        <div class="links"><a class="link" href="https://github.com/zachvivier" target="_blank" rel="noopener">github.com/zachvivier ↗</a></div>
+      </section>
+
+      <section id="other">
+        <div class="eyebrow">other / self-contained</div>
+        <h2>Small tools for noisy problems</h2>
+        <p class="section-intro">Browser-based utilities for inspecting local files. Your data stays in your browser.</p>
+        <div class="projects">
+          <a class="project" href="har-viewer.html">
+            <div class="project-top"><span class="project-name">HAR Viewer</span><span class="project-type">utility</span></div>
+            <p>Open HTTP Archive captures, inspect requests and responses, filter timelines, and export focused results.</p>
+            <span class="project-meta">local browser tool · launch ↗</span>
+          </a>
+          <a class="project" href="event-viewer.html">
+            <div class="project-top"><span class="project-name">Event Log Viewer</span><span class="project-type">utility</span></div>
+            <p>Open Windows <code>.evtx</code> files, filter events and timelines, and inspect the raw XML.</p>
+            <span class="project-meta">local browser tool · launch ↗</span>
+          </a>
+          <a class="project" href="cert-inspector.html">
+            <div class="project-top"><span class="project-name">Certificate Inspector</span><span class="project-type">utility</span></div>
+            <p>Read X.509 certificates and public keys, inspect extensions and fingerprints, and compare key material.</p>
+            <span class="project-meta">local browser tool · launch ↗</span>
+          </a>
+          <a class="project" href="mail-analyzer.html">
+            <div class="project-top"><span class="project-name">Mail Header Analyzer</span><span class="project-type">utility</span></div>
+            <p>Check raw messages for malformed headers, MIME and encoding problems, authentication claims, and routing details.</p>
+            <span class="project-meta">local browser tool · launch ↗</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="about">
+        <div class="eyebrow">about</div>
+        <div class="about-card">
+          <p>I'm Zach. I work in technical support and technical writing. I like building small tools, learning how systems work, and making technology easier to use.</p>
+          <p>Most of my projects start with a small annoyance and turn into something I can share.</p>
+          <div class="links">
+            <a class="link" href="https://www.linkedin.com/in/zachvivier/" target="_blank" rel="noopener">LinkedIn ↗</a>
+            <a class="link" href="https://github.com/zachvivier" target="_blank" rel="noopener">GitHub ↗</a>
+          </div>
+        </div>
+      </section>
     </main>
+
+    <footer><span>built by hand · no framework</span><span id="clock" aria-label="Local time"></span></footer>
   </div>
-
   <script>
-    const root = document.documentElement;
-    const toggle = document.getElementById('theme-toggle');
-    const themeColor = document.querySelector('meta[name="theme-color"]');
-    let isLightTheme = false;
-
-    const setTheme = (useLightTheme) => {
-      root.dataset.theme = useLightTheme ? 'light' : 'dark';
-      toggle.textContent = useLightTheme ? 'Dark' : 'Light';
-      toggle.setAttribute('aria-label', `Switch to ${useLightTheme ? 'dark' : 'light'} theme`);
-      themeColor.content = useLightTheme ? '#f6f8fa' : '#15191c';
-    };
-
+    const card = document.getElementById('repo-card');
+    const toggle = card.querySelector('.repo-toggle');
+    const chevron = document.getElementById('repo-chevron');
     toggle.addEventListener('click', () => {
-      isLightTheme = !isLightTheme;
-      setTheme(isLightTheme);
+      const open = card.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(open));
+      chevron.textContent = open ? '↑' : '↓';
     });
-
-    setTheme(isLightTheme);
+    const clock = document.getElementById('clock');
+    const updateClock = () => { clock.textContent = new Intl.DateTimeFormat([], {hour: '2-digit', minute: '2-digit', second: '2-digit'}).format(new Date()) + ' local'; };
+    updateClock();
+    window.setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
