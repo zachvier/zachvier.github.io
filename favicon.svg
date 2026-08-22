@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-labelledby="title description">
   <title id="title">Zach Vivier raster Z</title>
-  <desc id="description">A mint pixel Z with a pink one-pixel offset on a dark background.</desc>
-  <rect width="16" height="16" fill="#070A09"/>
+  <desc id="description">A mint pixel Z with a pink one-pixel offset on a transparent background.</desc>
   <g fill="#FF5F7E">
     <rect x="4" y="3" width="10" height="3"/>
     <rect x="11" y="5" width="3" height="3"/>
