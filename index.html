@@ -3,244 +3,386 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Zach Vivier — technical support engineer, technical writer, and builder of practical software.">
-  <meta name="theme-color" content="#1c1b1a">
-  <title>Zach Vivier // tools, systems, writing</title>
+  <meta name="description" content="Zach Vivier builds practical tools for support work, local inspection, and everyday systems.">
+  <meta name="theme-color" content="#070a09">
+  <title>Zach Vivier // useful systems</title>
   <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #1c1b1a;
-      --surface: #252321;
-      --surface-raised: #2c2926;
-      --border: #403b35;
-      --text: #ede9e2;
-      --muted: #b3aa9e;
-      --dim: #7e766b;
-      --accent: #d7834b;
-      --accent-bright: #f0a36d;
-      --accent-soft: rgba(215,131,75,.13);
-      --green: #91aa82;
-      --mono: 'JetBrains Mono', ui-monospace, monospace;
-      --sans: Inter, ui-sans-serif, system-ui, sans-serif;
+      --void: #070a09;
+      --panel: #0b100e;
+      --ink: #d9fbe8;
+      --muted: #7e9c8b;
+      --line: #203a2d;
+      --green: #6dffac;
+      --green-hot: #b4ffd2;
+      --amber: #f2bd66;
+      --pink: #ff5f7e;
+      --mono: "IBM Plex Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; background: var(--void); }
     body {
+      position: relative;
       margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font: 15px/1.65 var(--sans);
+      overflow-x: hidden;
+      background:
+        linear-gradient(rgba(109,255,172,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(109,255,172,.018) 1px, transparent 1px),
+        var(--void);
+      background-size: 42px 42px;
+      color: var(--ink);
+      font: 14px/1.55 var(--mono);
       -webkit-font-smoothing: antialiased;
     }
     body::before {
       content: "";
       position: fixed;
+      z-index: 10;
       inset: 0;
       pointer-events: none;
-      opacity: .35;
-      background-image: radial-gradient(circle at 1px 1px, rgba(237,233,226,.08) 1px, transparent 0);
-      background-size: 28px 28px;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0, rgba(0,0,0,.16) 1px, transparent 1px, transparent 4px);
+      opacity: .42;
     }
+    .scan-plane {
+      position: absolute;
+      z-index: 9;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .scan-plane::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: -18vh;
+      height: 18vh;
+      pointer-events: none;
+      border-bottom: 1px solid rgba(109,255,172,.25);
+      background: linear-gradient(to bottom, transparent, rgba(109,255,172,.035));
+      animation: sweep 9s linear infinite;
+    }
+
     a { color: inherit; }
-    .wrap { position: relative; z-index: 1; width: min(760px, calc(100% - 40px)); margin: 0 auto; }
+    :focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+    ::selection { background: var(--green); color: var(--void); }
 
-    header { padding: 72px 0 44px; }
-    .identity { display: flex; align-items: center; gap: 16px; }
-    .mark {
-      display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 auto;
-      border: 1px solid var(--accent); border-radius: 10px; background: var(--accent-soft);
-      color: var(--accent-bright); font: 700 18px var(--mono);
+    .shell { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 68px;
+      border-bottom: 1px solid var(--line);
     }
-    h1, h2, .eyebrow, .mono { font-family: var(--mono); }
-    h1 { margin: 0; font: 600 22px/1.2 var(--mono); letter-spacing: -.02em; }
-    .tagline { max-width: 57ch; margin: 18px 0 0; color: var(--muted); font-size: 16px; }
-    nav { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--border); font: 13px var(--mono); }
-    nav a { color: var(--dim); text-decoration: none; }
-    nav a:hover, nav a:focus-visible { color: var(--accent-bright); }
-
-    section { padding: 40px 0; border-top: 1px solid var(--border); }
-    .eyebrow { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; color: var(--dim); font-size: 12px; letter-spacing: .09em; text-transform: uppercase; }
-    .eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-    h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
-    .section-intro { margin: 0 0 18px; color: var(--muted); }
-
-    .log, .repo-card, .project, .note, .about-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
-    .log { padding: 17px 20px; font: 13px/1.65 var(--mono); }
-    .log-line { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 8px 0; border-bottom: 1px dashed rgba(64,59,53,.85); color: var(--muted); }
-    .log-line:last-child { border-bottom: 0; }
-    .log-date { color: var(--dim); }
-    .log-line strong { color: var(--text); font-weight: 500; }
-
-    .projects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .project { display: flex; flex-direction: column; min-height: 178px; padding: 18px; text-decoration: none; transition: border-color .15s ease, background .15s ease, transform .15s ease; }
-    .project:hover, .project:focus-visible { border-color: var(--accent); background: var(--surface-raised); transform: translateY(-2px); }
-    .project-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .project-name { color: var(--accent-bright); font: 600 15px var(--mono); }
-    .project-type { color: var(--dim); font: 11px var(--mono); text-transform: uppercase; }
-    .project p { margin: 12px 0 18px; color: var(--muted); font-size: 13.5px; }
-    .project-meta { margin-top: auto; color: var(--dim); font: 12px var(--mono); }
-
-    .repo-card { overflow: hidden; }
-    .repo-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 17px 19px; border: 0; background: transparent; color: var(--text); font: 500 15px var(--sans); text-align: left; cursor: pointer; }
-    .repo-toggle:hover { background: var(--surface-raised); }
-    .repo-toggle span:last-child { color: var(--dim); font: 13px var(--mono); }
-    .repo-panel { display: none; padding: 4px 12px 13px; border-top: 1px solid var(--border); }
-    .repo-card.open .repo-panel { display: block; }
-    .repo-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 12px 8px; border-radius: 7px; text-decoration: none; }
-    .repo-row:hover { background: var(--accent-soft); }
-    .repo-row strong { display: block; margin-bottom: 3px; color: var(--accent-bright); font: 14px var(--mono); }
-    .repo-row small { color: var(--muted); font-size: 12.5px; }
-    .repo-lang { flex: 0 0 auto; color: var(--dim); font: 11px var(--mono); }
-
-    .about-card { padding: 20px; }
-    .about-card p { margin: 0 0 14px; color: var(--muted); }
-    .about-card p:last-child { margin-bottom: 0; }
-    .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-    .link { padding: 8px 11px; border: 1px solid var(--border); border-radius: 7px; color: var(--accent-bright); font: 12px var(--mono); text-decoration: none; }
-    .link:hover, .link:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
-
-    footer { display: flex; justify-content: space-between; gap: 16px; padding: 34px 0 72px; border-top: 1px solid var(--border); color: var(--dim); font: 12px var(--mono); }
-    :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 3px; }
-    @media (max-width: 560px) {
-      .wrap { width: min(100% - 32px, 760px); }
-      header { padding: 48px 0 32px; }
-      h1 { font-size: 19px; }
-      .projects { grid-template-columns: 1fr; }
-      .log-line { grid-template-columns: 62px 1fr; gap: 10px; }
-      footer { flex-direction: column; }
+    .wordmark {
+      color: var(--green-hot);
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-decoration: none;
     }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .project { transition: none; } }
+    .wordmark::before { content: "["; color: var(--pink); }
+    .wordmark::after { content: "]_"; color: var(--pink); animation: blink 1.05s steps(1) infinite; }
+    nav { display: flex; gap: 24px; }
+    nav a {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    nav a:hover { color: var(--green); }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+      gap: 72px;
+      min-height: 575px;
+      align-items: center;
+      padding: 76px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .kicker {
+      margin: 0 0 24px;
+      color: var(--amber);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .kicker::before { content: "SYS://"; color: var(--pink); }
+    h1 {
+      max-width: 12ch;
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(54px, 8vw, 108px);
+      line-height: .89;
+      letter-spacing: -.075em;
+      text-transform: uppercase;
+      text-wrap: balance;
+      animation: glitch 7s steps(1) infinite;
+    }
+    h1 em { color: var(--green); font-style: normal; text-shadow: 0 0 24px rgba(109,255,172,.18); }
+    .hero-copy {
+      max-width: 570px;
+      margin: 30px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .jump {
+      display: inline-block;
+      margin-top: 30px;
+      color: var(--void);
+      background: var(--green);
+      padding: 11px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-decoration: none;
+      text-transform: uppercase;
+      box-shadow: 5px 5px 0 var(--pink);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .jump:hover { transform: translate(2px, 2px); box-shadow: 3px 3px 0 var(--pink); }
+
+    .manifest {
+      align-self: end;
+      margin-bottom: 12px;
+      border-top: 1px solid var(--green);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .manifest-row {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .manifest-row span:first-child { color: var(--green); text-transform: uppercase; }
+
+    .block {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 52px;
+      padding: 86px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .block-head span {
+      color: var(--pink);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+    }
+    h2 {
+      margin: 12px 0 0;
+      color: var(--green-hot);
+      font-size: 22px;
+      line-height: 1.05;
+      letter-spacing: -.03em;
+      text-transform: uppercase;
+    }
+
+    .index { border-top: 1px solid var(--line); }
+    .project {
+      position: relative;
+      isolation: isolate;
+      display: grid;
+      grid-template-columns: 44px minmax(140px, .46fr) minmax(0, 1fr) auto;
+      gap: 22px;
+      align-items: baseline;
+      padding: 22px 12px 22px 0;
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+    }
+    .project::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .16s ease;
+    }
+    .project > span { position: relative; z-index: 1; }
+    .project:hover::before { transform: scaleX(1); }
+    .project:hover { color: var(--void); }
+    .project:hover .num, .project:hover .desc, .project:hover .meta { color: var(--void); }
+    .num { color: var(--pink); font-size: 11px; }
+    .title { color: var(--ink); font-size: 19px; font-weight: 700; letter-spacing: -.025em; }
+    .desc { color: var(--muted); }
+    .meta { color: var(--amber); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+    .tool {
+      min-height: 150px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+      transition: background .15s ease, color .15s ease;
+    }
+    .tool:hover { background: var(--green); color: var(--void); }
+    .tool-code { display: block; margin-bottom: 30px; color: var(--pink); font-size: 10px; letter-spacing: .1em; }
+    .tool:hover .tool-code, .tool:hover .tool-desc { color: var(--void); }
+    .tool-name { display: block; font-size: 17px; font-weight: 700; text-transform: uppercase; }
+    .tool-desc { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; }
+
+    .blog-slot {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      min-height: 150px;
+      padding: 28px;
+      border: 1px solid var(--line);
+    }
+    .blog-state { color: var(--pink); font-size: 10px; letter-spacing: .1em; }
+    .blog-slot h3 { margin: 0; font-size: 19px; text-transform: uppercase; }
+    .blog-slot p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .blog-cursor { color: var(--green); font-size: 24px; animation: blink 1.1s steps(1) infinite; }
+
+    .about {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 40px;
+      align-items: end;
+      padding: 64px 0;
+    }
+    .about p { max-width: 720px; margin: 0; color: var(--muted); font-size: 16px; }
+    .about strong { color: var(--ink); font-weight: 500; }
+    .links { display: flex; gap: 20px; }
+    .links a { color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
+    @keyframes sweep { to { top: 100%; } }
+    @keyframes blink { 0%, 52% { opacity: 1; } 53%, 100% { opacity: 0; } }
+    @keyframes glitch {
+      0%, 96%, 100% { transform: none; text-shadow: none; }
+      97% { transform: translateX(2px); text-shadow: -3px 0 var(--pink), 3px 0 var(--green); }
+      98% { transform: translateX(-1px); text-shadow: 2px 0 var(--amber); }
+      99% { transform: none; text-shadow: none; }
+    }
+
+    @media (max-width: 800px) {
+      .shell { width: min(100% - 32px, 1180px); }
+      header { min-height: 62px; }
+      nav { gap: 15px; }
+      .hero { grid-template-columns: 1fr; gap: 58px; min-height: 0; padding: 78px 0 66px; }
+      h1 { font-size: clamp(48px, 15vw, 76px); }
+      .manifest { margin: 0; }
+      .block { grid-template-columns: 1fr; gap: 36px; padding: 62px 0; }
+      .project { grid-template-columns: 34px 1fr auto; gap: 8px 14px; }
+      .project .desc { grid-column: 2 / -1; }
+      .project .meta { grid-column: 3; grid-row: 1; }
+      .tools { grid-template-columns: 1fr; }
+      .blog-slot { grid-template-columns: 1fr auto; gap: 12px 20px; }
+      .blog-state { grid-column: 1 / -1; }
+      .about { grid-template-columns: 1fr; align-items: start; }
+    }
+
+    @media (max-width: 480px) {
+      .wordmark { font-size: 12px; }
+      .hero-copy { font-size: 14px; }
+      .project { padding-right: 0; }
+      .title { font-size: 17px; }
+      .meta { max-width: 76px; text-align: right; white-space: normal; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="scan-plane" aria-hidden="true"></div>
+  <div class="shell">
     <header>
-      <div class="identity">
-        <div class="mark" aria-hidden="true">Z</div>
-        <h1>zach vivier // personal site</h1>
-      </div>
-      <p class="tagline">Technical support engineer and technical writer. I build practical software, explore self-hosted systems, and turn complicated workflows into clearer ones.</p>
+      <a class="wordmark" href="#top">ZACHVIVIER</a>
       <nav aria-label="Primary navigation">
-        <a href="#now">now</a>
-        <a href="#projects">projects</a>
-        <a href="#github">github</a>
-        <a href="#local-only">local_only</a>
-        <a href="#about">about</a>
+        <a href="#work">work</a>
+        <a href="#tools">tools</a>
+        <a href="#blog">blog</a>
       </nav>
     </header>
 
-    <main>
-      <section id="now">
-        <div class="eyebrow">currently</div>
-        <div class="log" aria-label="Current focus">
-          <div class="log-line"><span class="log-date">focus</span><strong>support systems, technical writing, and useful automation</strong></div>
-          <div class="log-line"><span class="log-date">building</span><span>small tools that remove friction from everyday work</span></div>
-          <div class="log-line"><span class="log-date">exploring</span><span>local software, private infrastructure, and thoughtful interfaces</span></div>
-          <div class="log-line"><span class="log-date">principle</span><span>make it useful, explain how it works, keep it maintainable</span></div>
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <p class="kicker">field_notes / useful_systems</p>
+          <h1 id="hero-title">Useful systems for <em>noisy work.</em></h1>
+          <p class="hero-copy">I build focused tools and clear explanations for the parts of software that waste time.</p>
+          <a class="jump" href="#work">Open index ↓</a>
         </div>
+        <aside class="manifest" aria-label="Working principles">
+          <div class="manifest-row"><span>Focus</span><b>support + writing</b></div>
+          <div class="manifest-row"><span>Method</span><b>small, local, clear</b></div>
+          <div class="manifest-row"><span>Rule</span><b>maintainable first</b></div>
+        </aside>
       </section>
 
-      <section id="projects">
-        <div class="eyebrow">selected work</div>
-        <h2>Public projects</h2>
-        <p class="section-intro">A few things I have built or helped shape in the open.</p>
-        <div class="projects">
+      <section class="block" id="work" aria-labelledby="work-title">
+        <div class="block-head">
+          <span>INDEX_03</span>
+          <h2 id="work-title">Selected work</h2>
+        </div>
+        <div class="index">
           <a class="project" href="https://github.com/zachvivier/TabGrab" target="_blank" rel="noopener">
-            <div class="project-top"><span class="project-name">TabGrab</span><span class="project-type">browser extension</span></div>
-            <p>Well-behaved browser tabs for Zendesk agents. Keeps navigation focused without external tracking.</p>
-            <span class="project-meta">JavaScript · Chrome + Firefox</span>
+            <span class="num">01</span><span class="title">TabGrab</span><span class="desc">Tames Zendesk agent tabs.</span><span class="meta">JS / browser</span>
           </a>
           <a class="project" href="https://github.com/zachvivier/calwidget" target="_blank" rel="noopener">
-            <div class="project-top"><span class="project-name">CalWidget</span><span class="project-type">macOS app</span></div>
-            <p>A quiet desktop agenda that reads the calendars already connected to macOS and stays out of the way.</p>
-            <span class="project-meta">Swift · read-only calendar view</span>
+            <span class="num">02</span><span class="title">CalWidget</span><span class="desc">A quiet agenda for macOS.</span><span class="meta">Swift / macOS</span>
           </a>
           <a class="project" href="https://github.com/zachvivier/crop-easy" target="_blank" rel="noopener">
-            <div class="project-top"><span class="project-name">Crop Easy</span><span class="project-type">macOS app</span></div>
-            <p>Precise image cropping with live pixel measurements, aspect controls, and predictable exports.</p>
-            <span class="project-meta">Swift · image utility</span>
+            <span class="num">03</span><span class="title">Crop Easy</span><span class="desc">Exact image crops without friction.</span><span class="meta">Swift / utility</span>
           </a>
-
         </div>
       </section>
 
-      <section id="github">
-        <div class="eyebrow">code</div>
-        <h2>GitHub</h2>
-        <p class="section-intro">Public code, experiments, and documentation.</p>
-        <div class="repo-card" id="repo-card">
-          <button class="repo-toggle" type="button" aria-expanded="false" aria-controls="repo-panel"><span>View public repositories</span><span id="repo-chevron">↓</span></button>
-          <div class="repo-panel" id="repo-panel">
-            <a class="repo-row" href="https://github.com/zachvivier/zachvivier.github.io" target="_blank" rel="noopener"><span><strong>zachvivier.github.io</strong><small>This personal site, served as a dependency-free GitHub Pages site.</small></span><span class="repo-lang">HTML</span></a>
-            <a class="repo-row" href="https://github.com/zachvivier/TabGrab" target="_blank" rel="noopener"><span><strong>TabGrab</strong><small>A browser extension for keeping Zendesk agent tabs tidy.</small></span><span class="repo-lang">JS</span></a>
-            <a class="repo-row" href="https://github.com/zachvivier/calwidget" target="_blank" rel="noopener"><span><strong>calwidget</strong><small>A live calendar agenda for the macOS desktop.</small></span><span class="repo-lang">Swift</span></a>
-            <a class="repo-row" href="https://github.com/zachvivier/crop-easy" target="_blank" rel="noopener"><span><strong>crop-easy</strong><small>A native utility for exact image crops and exports.</small></span><span class="repo-lang">Swift</span></a>
+      <section class="block" id="tools" aria-labelledby="tools-title">
+        <div class="block-head">
+          <span>LOCAL_ONLY</span>
+          <h2 id="tools-title">Local tools keep data in your browser</h2>
+        </div>
+        <div class="tools">
+          <a class="tool" href="har-viewer.html"><span class="tool-code">UTIL::HAR</span><span class="tool-name">HAR Viewer ↗</span><span class="tool-desc">Requests, responses, timelines.</span></a>
+          <a class="tool" href="event-viewer.html"><span class="tool-code">UTIL::EVTX</span><span class="tool-name">Event Viewer ↗</span><span class="tool-desc">Windows logs and raw XML.</span></a>
+          <a class="tool" href="cert-inspector.html"><span class="tool-code">UTIL::X509</span><span class="tool-name">Cert Inspector ↗</span><span class="tool-desc">Keys, extensions, fingerprints.</span></a>
+          <a class="tool" href="mail-analyzer.html"><span class="tool-code">UTIL::MAIL</span><span class="tool-name">Mail Analyzer ↗</span><span class="tool-desc">MIME, auth, routing.</span></a>
+        </div>
+      </section>
 
+      <section class="block" id="blog" aria-labelledby="blog-title">
+        <div class="block-head">
+          <span>FIELD_LOG</span>
+          <h2 id="blog-title">Blog</h2>
+        </div>
+        <div class="blog-slot">
+          <span class="blog-state">NO_POSTS_YET</span>
+          <div>
+            <h3>Notes will land here.</h3>
+            <p>Support systems, technical writing, and small tools.</p>
           </div>
-        </div>
-        <div class="links"><a class="link" href="https://github.com/zachvivier" target="_blank" rel="noopener">github.com/zachvivier ↗</a></div>
-      </section>
-
-      <section id="local-only">
-        <div class="eyebrow">LOCAL_ONLY</div>
-        <h2>Other / self-contained projects</h2>
-        <p class="section-intro">LOCAL TOOLS KEEP DATA IN YOUR BROWSER</p>
-        <div class="projects">
-          <a class="project" href="har-viewer.html">
-            <div class="project-top"><span class="project-name">HAR Viewer</span><span class="project-type">utility</span></div>
-            <p>Open HTTP Archive captures, inspect requests and responses, filter timelines, and export focused results.</p>
-            <span class="project-meta">local browser tool · launch ↗</span>
-          </a>
-          <a class="project" href="event-viewer.html">
-            <div class="project-top"><span class="project-name">Event Log Viewer</span><span class="project-type">utility</span></div>
-            <p>Open Windows <code>.evtx</code> files, filter events and timelines, and inspect the raw XML.</p>
-            <span class="project-meta">local browser tool · launch ↗</span>
-          </a>
-          <a class="project" href="cert-inspector.html">
-            <div class="project-top"><span class="project-name">Certificate Inspector</span><span class="project-type">utility</span></div>
-            <p>Read X.509 certificates and public keys, inspect extensions and fingerprints, and compare key material.</p>
-            <span class="project-meta">local browser tool · launch ↗</span>
-          </a>
-          <a class="project" href="mail-analyzer.html">
-            <div class="project-top"><span class="project-name">Mail Header Analyzer</span><span class="project-type">utility</span></div>
-            <p>Check raw messages for malformed headers, MIME and encoding problems, authentication claims, and routing details.</p>
-            <span class="project-meta">local browser tool · launch ↗</span>
-          </a>
+          <span class="blog-cursor" aria-hidden="true">▮</span>
         </div>
       </section>
 
-      <section id="about">
-        <div class="eyebrow">about</div>
-        <div class="about-card">
-          <p>I'm Zach. I work in technical support and technical writing. I like building small tools, learning how systems work, and making technology easier to use.</p>
-          <p>Most of my projects start with a small annoyance and turn into something I can share.</p>
-          <div class="links">
-            <a class="link" href="https://www.linkedin.com/in/zachvivier/" target="_blank" rel="noopener">LinkedIn ↗</a>
-            <a class="link" href="https://github.com/zachvivier" target="_blank" rel="noopener">GitHub ↗</a>
-          </div>
-        </div>
+      <section class="about" id="about" aria-label="About Zach">
+        <p><strong>I'm Zach.</strong> I work in technical support and technical writing. Most projects begin with a small annoyance and end as something useful.</p>
+        <div class="links"><a href="https://github.com/zachvivier" target="_blank" rel="noopener">GitHub ↗</a><a href="https://www.linkedin.com/in/zachvivier/" target="_blank" rel="noopener">LinkedIn ↗</a></div>
       </section>
     </main>
-
-    <footer><span>built by hand · no framework</span><span id="clock" aria-label="Local time"></span></footer>
   </div>
-  <script>
-    const card = document.getElementById('repo-card');
-    const toggle = card.querySelector('.repo-toggle');
-    const chevron = document.getElementById('repo-chevron');
-    toggle.addEventListener('click', () => {
-      const open = card.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(open));
-      chevron.textContent = open ? '↑' : '↓';
-    });
-    const clock = document.getElementById('clock');
-    const updateClock = () => { clock.textContent = new Intl.DateTimeFormat([], {hour: '2-digit', minute: '2-digit', second: '2-digit'}).format(new Date()) + ' local'; };
-    updateClock();
-    window.setInterval(updateClock, 1000);
-  </script>
 </body>
 </html>
