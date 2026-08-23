@@ -1,20 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-labelledby="title description">
-  <title id="title">Zach Vivier raster Z</title>
-  <desc id="description">A mint pixel Z with a pink one-pixel offset on a transparent background.</desc>
-  <g fill="#FF5F7E">
-    <rect x="4" y="3" width="10" height="3"/>
-    <rect x="11" y="5" width="3" height="3"/>
-    <rect x="9" y="7" width="3" height="3"/>
-    <rect x="7" y="9" width="3" height="3"/>
-    <rect x="5" y="11" width="3" height="3"/>
-    <rect x="4" y="13" width="10" height="3"/>
-  </g>
-  <g fill="#B4FFD2">
-    <rect x="3" y="2" width="10" height="3"/>
-    <rect x="10" y="4" width="3" height="3"/>
-    <rect x="8" y="6" width="3" height="3"/>
-    <rect x="6" y="8" width="3" height="3"/>
-    <rect x="4" y="10" width="3" height="3"/>
-    <rect x="3" y="12" width="10" height="3"/>
+  <title id="title">Zach Vivier pixel Z</title>
+  <desc id="description">A single muted blue pixel Z on a transparent background.</desc>
+  <g fill="#7AA2F7">
+    <rect x="4" y="2" width="8" height="2"/>
+    <rect x="10" y="4" width="2" height="2"/>
+    <rect x="8" y="6" width="2" height="2"/>
+    <rect x="6" y="8" width="2" height="2"/>
+    <rect x="4" y="10" width="2" height="2"/>
+    <rect x="4" y="12" width="8" height="2"/>
   </g>
 </svg>
